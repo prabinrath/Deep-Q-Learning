@@ -5,7 +5,7 @@ import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
 from collections import namedtuple
 from dqn_utils import ReplayMemory
-from tqdm import tqdm
+from copy import deepcopy
 import cv2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -16,14 +16,15 @@ UPDATE_INTERVAL = 100 # Interval for target update
 LR = 0.01 # AdamW learning rate
 EPSILON_START = 0.9 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 1000 # Annealing frames
+EXPLORATION_FRAMES = 2000 # Annealing frames
 BATCH_SIZE = 32 # Sampling size from memory
 MEMORY_BUFFER = 2000 # Replay buffer size
-EPISODES = 200 # Number of episodes for training
+EPISODES = 500 # Number of episodes for training
 
-# environment, training policy, target policy
 environment = 'CartPole-v1'
+# environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment)
+renv = deepcopy(env)
 loss_fn = nn.SmoothL1Loss()
 optimizer = optim.AdamW(policy.parameters(), lr=LR, amsgrad=True)
 
@@ -67,46 +68,56 @@ def optimize_policy(samples):
     loss.backward()
     optimizer.step()            
 
+def validate_policy():    
+    renv.reset()
+    done = False
+    valid_reward = 0
+    while not done:       
+        state = renv.get_state()
+        if RENDER:
+            rgb = renv.render()
+            cv2.imshow(environment, rgb)
+            cv2.waitKey(100)
+        action = select_action(state, renv.act_dim)
+        _, reward, done = renv.step(action)
+        valid_reward+=reward
+    return valid_reward
+
 max_possible_reward = 500
 reward_increment = max_possible_reward/10
-max_episode_reward = 0
+max_valid_reward = 0
 max_reward_target = reward_increment
-for episode in tqdm(range(EPISODES)):
-    # Render when there is a performance improvement
-    if max_episode_reward>max_reward_target:
+for episode in range(EPISODES):
+    if max_valid_reward > max_possible_reward*0.9:
         RENDER = True
-        max_reward_target=min(max_possible_reward, max(max_reward_target,max_episode_reward)+reward_increment)-1
-        print('Max Episode Reward: ', max_episode_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+environment+'/'+str(int(max_episode_reward))+'.dqn')
+    valid_reward = validate_policy()
+    max_valid_reward = max(valid_reward,max_valid_reward)
+
+    # Save model when there is a performance improvement
+    if max_valid_reward>max_reward_target:
+        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
+        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+        torch.save(policy.state_dict(), 'Checkpoints/'+environment+'/'+str(int(max_valid_reward))+'.dqn')
+        if max_valid_reward==max_possible_reward:
+            print('Best Model Achieved !!!')
+            break
     
-    episode_reward = 0
     # Default max episode steps is defined in Gym environments
     done = False
     while not done:       
         state = env.get_state()
-        if RENDER:
-            rgb = env.render()
-            cv2.imshow('Cart Pole', rgb)
-            cv2.waitKey(100)
         action = select_action(state, env.act_dim)
         next_state, reward, done = env.step(action)
-        episode_reward+=reward
-        glob_frame+=1
-        
+        glob_frame+=1        
+
         memory.push(Transition(state, action, reward, next_state, done))
         if memory.length()<BATCH_SIZE:
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))
 
-        # if glob_frame%UPDATE_INTERVAL==0:
-        #     target.load_state_dict(policy.state_dict())
-        target_state_dict = target.state_dict()
-        policy_state_dict = policy.state_dict()
-        TAU = 0.005
-        for key in policy_state_dict:
-            target_state_dict[key] = policy_state_dict[key]*TAU + target_state_dict[key]*(1-TAU)
-        target.load_state_dict(target_state_dict)
+        if glob_frame%UPDATE_INTERVAL==0:
+            target.load_state_dict(policy.state_dict())
 
-    max_episode_reward = max(episode_reward,max_episode_reward)
-    RENDER = False
+RENDER = True
+validate_policy()

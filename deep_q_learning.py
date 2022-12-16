@@ -63,6 +63,7 @@ def optimize_policy(samples):
         q_nsa_max = target(next_states).max(1).values
     q_sa_target = [rewards[j]+GAMMA*q_nsa_max[j].item()*(1-terminals[j]) for j in range(len(rewards))]
     q_sa_target = torch.tensor(q_sa_target, device=device)
+    # Optimize on the TD loss
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
@@ -86,12 +87,14 @@ def validate_policy():
 max_possible_reward = 500
 reward_increment = max_possible_reward/10
 max_valid_reward = 0
+reward_history = []
 max_reward_target = reward_increment
 for episode in range(EPISODES):
-    if max_valid_reward > max_possible_reward*0.9:
+    if max_valid_reward > max_possible_reward*0.98:
         RENDER = True
     valid_reward = validate_policy()
     max_valid_reward = max(valid_reward,max_valid_reward)
+    reward_history.append(valid_reward)
 
     # Save model when there is a performance improvement
     if max_valid_reward>max_reward_target:
@@ -121,3 +124,13 @@ for episode in range(EPISODES):
 
 RENDER = True
 validate_policy()
+
+reward_history = np.array(reward_history)
+smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
+import matplotlib.pyplot as plt
+plt.plot(reward_history, label='Real')
+plt.plot(smooth_reward_history, label='Smooth')
+plt.xlabel('Episode')
+plt.ylabel('Reward')
+plt.legend(loc='upper left')
+plt.show()

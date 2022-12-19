@@ -13,15 +13,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 RENDER = False
 GAMMA = 0.9 # Discount factor
 UPDATE_INTERVAL = 100 # Interval for target update
-LR = 0.01 # AdamW learning rate
+LR = 0.001 # AdamW learning rate
 EPSILON_START = 0.9 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 2000 # Annealing frames
-BATCH_SIZE = 32 # Sampling size from memory
-MEMORY_BUFFER = 2000 # Replay buffer size
-EPISODES = 500 # Number of episodes for training
+EXPLORATION_FRAMES = 100000 # Annealing frames
+BATCH_SIZE = 128 # Sampling size from memory
+MEMORY_BUFFER = 10000 # Replay buffer size
+EPISODES = 1000 # Number of episodes for training
 
-environment = 'CartPole-v1'
+environment = 'Pong-v4'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment)
 renv = deepcopy(env)
@@ -40,8 +40,9 @@ def get_epsilon():
     return EPSILON_END + (EXPLORATION_FRAMES-glob_frame)*(EPSILON_START-EPSILON_END)/EXPLORATION_FRAMES \
         if glob_frame < EXPLORATION_FRAMES else EPSILON_END
 
-def select_action(state, act_dim):    
-    eps = get_epsilon()
+def select_action(state, act_dim, eps=None):    
+    if eps==None:
+        eps = get_epsilon()
     # Epsilon-greedy exploration
     if np.random.uniform() < eps:
         return np.random.choice(act_dim)
@@ -73,26 +74,30 @@ def validate_policy():
     renv.reset()
     done = False
     valid_reward = 0
+    if RENDER:
+        cv2.namedWindow(environment, cv2.WINDOW_NORMAL)
+    # cv2.resizeWindow(environment, 300, 300)
     while not done:       
         state = renv.get_state()
         if RENDER:
             rgb = renv.render()
             cv2.imshow(environment, rgb)
             cv2.waitKey(100)
-        action = select_action(state, renv.act_dim)
+        action = select_action(state, renv.act_dim, EPSILON_END)
         _, reward, done = renv.step(action)
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 500
+max_possible_reward = 21
 reward_increment = max_possible_reward/10
-max_valid_reward = 0
+max_valid_reward = -21
 reward_history = []
 max_reward_target = reward_increment
 for episode in range(EPISODES):
     if max_valid_reward > max_possible_reward*0.98:
         RENDER = True
     valid_reward = validate_policy()
+    print('Episode: ', episode, ' | Validation Reward: ', valid_reward, ' | Epsilon: ', get_epsilon())
     max_valid_reward = max(valid_reward,max_valid_reward)
     reward_history.append(valid_reward)
 
@@ -110,7 +115,7 @@ for episode in range(EPISODES):
     while not done:       
         state = env.get_state()
         action = select_action(state, env.act_dim)
-        next_state, reward, done = env.step(action)
+        next_state, reward, done = env.step(action)        
         glob_frame+=1        
 
         memory.push(Transition(state, action, reward, next_state, done))

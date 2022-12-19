@@ -1,12 +1,14 @@
 import gym
-env = gym.make("LunarLander-v2", render_mode="human")
+env = gym.make("Pong-v4", render_mode="human")
 env.metadata.setdefault('render_fps', 10)
 
 observation, info = env.reset(seed=42)
-for _ in range(1000):
+done = False
+while not done:
     action = env.action_space.sample()
     observation, reward, terminated, truncated, info = env.step(action)
-
-    if terminated or truncated:
+    print(reward, info)
+    done = terminated or truncated
+    if done:
         observation, info = env.reset()
 env.close()

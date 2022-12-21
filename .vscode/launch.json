@@ -11,6 +11,14 @@
             "program": "deep_q_learning.py",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "DuelDoubleDQN",
+            "type": "python",
+            "request": "launch",
+            "program": "duel_double_deep_q_learning.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

@@ -3,8 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
-from collections import namedtuple
-from dqn_utils import ReplayMemory
+from dqn_utils import BatchReplayMemory
 from copy import deepcopy
 import cv2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -13,12 +12,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 RENDER = False
 GAMMA = 0.9 # Discount factor
 UPDATE_INTERVAL = 100 # Interval for target update
-LR = 0.001 # AdamW learning rate
+LR = 0.00025 # AdamW learning rate
 EPSILON_START = 0.9 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 100000 # Annealing frames
-BATCH_SIZE = 128 # Sampling size from memory
-MEMORY_BUFFER = 10000 # Replay buffer size
+EXPLORATION_FRAMES = 1000000 # Annealing frames
+BATCH_SIZE = 64 # Sampling size from memory
+MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 1000 # Number of episodes for training
 
 environment = 'Pong-v4'
@@ -28,11 +27,8 @@ renv = deepcopy(env)
 loss_fn = nn.SmoothL1Loss()
 optimizer = optim.AdamW(policy.parameters(), lr=LR, amsgrad=True)
 
-# Named tuple for storing transitions
-Transition = namedtuple('Transition', 'state action reward next_state terminal')
-
 # Memory for Experience Replay
-memory = ReplayMemory(MEMORY_BUFFER)
+memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
 glob_frame = 0
 
 def get_epsilon():
@@ -82,7 +78,7 @@ def validate_policy():
         if RENDER:
             rgb = renv.render()
             cv2.imshow(environment, rgb)
-            cv2.waitKey(100)
+            cv2.waitKey(10)
         action = select_action(state, renv.act_dim, EPSILON_END)
         _, reward, done = renv.step(action)
         valid_reward+=reward
@@ -92,7 +88,7 @@ max_possible_reward = 21
 reward_increment = max_possible_reward/10
 max_valid_reward = -21
 reward_history = []
-max_reward_target = reward_increment
+max_reward_target = max_valid_reward + reward_increment
 for episode in range(EPISODES):
     if max_valid_reward > max_possible_reward*0.98:
         RENDER = True
@@ -116,9 +112,9 @@ for episode in range(EPISODES):
         state = env.get_state()
         action = select_action(state, env.act_dim)
         next_state, reward, done = env.step(action)        
-        glob_frame+=1        
+        glob_frame+=1
 
-        memory.push(Transition(state, action, reward, next_state, done))
+        memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
         if memory.length()<BATCH_SIZE:
             continue
         else:

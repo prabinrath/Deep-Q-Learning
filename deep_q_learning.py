@@ -10,9 +10,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Constant Parameters
 RENDER = False
-GAMMA = 0.9 # Discount factor
-UPDATE_INTERVAL = 100 # Interval for target update
-LR = 0.00025 # AdamW learning rate
+GAMMA = 0.98 # Discount factor
+UPDATE_INTERVAL = 1000 # Interval for target update
+LR = 0.001 # AdamW learning rate
 EPSILON_START = 0.9 # Annealing start
 EPSILON_END = 0.05 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
@@ -20,7 +20,7 @@ BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 1000 # Number of episodes for training
 
-environment = 'Pong-v4'
+environment = 'PongDeterministic-v4'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment)
 renv = deepcopy(env)
@@ -115,7 +115,7 @@ for episode in range(EPISODES):
         glob_frame+=1
 
         memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
-        if memory.length()<BATCH_SIZE:
+        if memory.length()<MEMORY_BUFFER*0.5:
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))

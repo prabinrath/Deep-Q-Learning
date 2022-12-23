@@ -1,5 +1,5 @@
 import gym
-env = gym.make("Pong-v4", render_mode="human")
+env = gym.make("PongDeterministic-v4", render_mode="human")
 env.metadata.setdefault('render_fps', 10)
 
 observation, info = env.reset(seed=42)

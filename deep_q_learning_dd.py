@@ -3,33 +3,36 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
-from dqn_utils import BatchReplayMemory
+from dqn_utils import BatchReplayMemory, ReplayMemory
 from copy import deepcopy
 import cv2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
 
 # Constant Parameters
 RENDER = False
-GAMMA = 0.98 # Discount factor
+GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
-LR = 0.001 # AdamW learning rate
-EPSILON_START = 0.9 # Annealing start
+LR = 0.0001 # AdamW learning rate
+EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 100000 # Annealing frames
+EXPLORATION_FRAMES = 1000000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
-EPISODES = 1000 # Number of episodes for training
+EPISODES = 10000 # Number of episodes for training
 
-environment = 'PongDeterministic-v4'
+environment = 'Pong-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
-env, policy, target = GetEnvAndLearner(name = environment)
+env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
 renv = deepcopy(env)
 loss_fn = nn.SmoothL1Loss()
 optimizer = optim.AdamW(policy.parameters(), lr=LR, amsgrad=True)
 
 # Memory for Experience Replay
-memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
+# memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
+memory = ReplayMemory(MEMORY_BUFFER)
+
 glob_frame = 0
 
 def get_epsilon():
@@ -94,8 +97,8 @@ max_valid_reward = -21
 reward_history = []
 max_reward_target = max_valid_reward + reward_increment
 for episode in range(EPISODES):
-    if max_valid_reward > max_possible_reward*0.98:
-        RENDER = True
+    # if max_valid_reward > max_possible_reward*0.98:
+    #     RENDER = True
     valid_reward = validate_policy()
     print('Episode: ', episode, ' | Validation Reward: ', valid_reward, ' | Epsilon: ', get_epsilon(), ' | Memory Length:', memory.length())
     max_valid_reward = max(valid_reward,max_valid_reward)
@@ -105,7 +108,7 @@ for episode in range(EPISODES):
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+str(int(max_valid_reward))+'.dqn')
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(ddqn'+str(int(max_valid_reward))+')'+'.dqn')
         if max_valid_reward==max_possible_reward:
             print('Best Model Achieved !!!')
             break
@@ -118,7 +121,8 @@ for episode in range(EPISODES):
         next_state, reward, done = env.step(action)        
         glob_frame+=1
 
-        memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
+        # memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
+        memory.push((state, action, reward, next_state, done))
         if memory.length()<MEMORY_BUFFER*0.5:
             continue
         else:
@@ -127,8 +131,8 @@ for episode in range(EPISODES):
         if glob_frame%UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
 
-RENDER = True
-validate_policy()
+# RENDER = True
+# validate_policy()
 
 reward_history = np.array(reward_history)
 smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
@@ -138,4 +142,5 @@ plt.plot(smooth_reward_history, label='Smooth')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
-plt.show()
+# plt.show()
+plt.savefig('res_dddqn.png')

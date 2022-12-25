@@ -14,25 +14,23 @@ RENDER = False
 GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.0001 # AdamW learning rate
-EPSILON_START = 1 # Annealing start
+EPSILON_START = 0.9 # Annealing start
 EPSILON_END = 0.05 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
 
-environment = 'Pong-v4'
+environment = 'PongDeterministic-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
-env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')
+env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
 renv = deepcopy(env)
 loss_fn = nn.SmoothL1Loss()
 optimizer = optim.AdamW(policy.parameters(), lr=LR, amsgrad=True)
 
 # Memory for Experience Replay
-# memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
-memory = ReplayMemory(MEMORY_BUFFER)
-
+memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
 glob_frame = 0
 
 def get_epsilon():
@@ -57,11 +55,14 @@ def optimize_policy(samples):
     states = torch.tensor(np.vstack(states), device=device)
     actions = torch.tensor(np.vstack(actions), device=device)
     next_states = torch.tensor(np.vstack(next_states), device=device)
-    policy.train()
-    q_sa = policy(states).gather(1, actions).squeeze()
     with torch.no_grad():
-        target.eval()
-        q_nsa_max = target(next_states).max(1).values
+        policy.eval()
+        next_actions = torch.argmax(policy(next_states),1).unsqueeze(1)
+    policy.train()    
+    q_sa = policy(states).gather(1, actions).squeeze()    
+    with torch.no_grad():
+        target.eval()        
+        q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
     q_sa_target = [rewards[j]+GAMMA*q_nsa_max[j].item()*(1-terminals[j]) for j in range(len(rewards))]
     q_sa_target = torch.tensor(q_sa_target, device=device)
     # Optimize on the TD loss
@@ -88,27 +89,27 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 21
-reward_increment = max_possible_reward/10
-max_valid_reward = -21
+# max_possible_reward = 21
+# reward_increment = max_possible_reward/10
+# max_valid_reward = -21
 reward_history = []
-max_reward_target = max_valid_reward + reward_increment
+# max_reward_target = max_valid_reward + reward_increment
 for episode in range(EPISODES):
     # if max_valid_reward > max_possible_reward*0.98:
     #     RENDER = True
-    valid_reward = validate_policy()
-    print('Episode: ', episode, ' | Validation Reward: ', valid_reward, ' | Epsilon: ', get_epsilon(), ' | Memory Len', memory.length())
-    max_valid_reward = max(valid_reward,max_valid_reward)
-    reward_history.append(valid_reward)
+    # valid_reward = validate_policy()
+    # print('Episode: ', episode, ' | Validation Reward: ', valid_reward, ' | Epsilon: ', get_epsilon(), ' | Memory Length:', memory.length())
+    # max_valid_reward = max(valid_reward,max_valid_reward)
+    # reward_history.append(valid_reward)
 
-    # Save model when there is a performance improvement
-    if max_valid_reward>max_reward_target:
-        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
-        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if max_valid_reward==max_possible_reward:
-            print('Best Model Achieved !!!')
-            break
+    # # Save model when there is a performance improvement
+    # if max_valid_reward>max_reward_target:
+    #     max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
+    #     print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+    #     torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(ddqn'+str(int(max_valid_reward))+')'+'.dqn')
+    #     if max_valid_reward==max_possible_reward:
+    #         print('Best Model Achieved !!!')
+    #         break
     
     # Default max episode steps is defined in Gym environments
     done = False
@@ -140,4 +141,4 @@ plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
 # plt.show()
-plt.savefig('res.png')
+plt.savefig('res_dddqn.png')

@@ -4,7 +4,7 @@ import cv2
 
 class AtariEnv():
     def __init__(self, name):
-        self.env = gym.make(name, render_mode="rgb_array")
+        self.env = gym.make(name)
         self.obs_dim = self.env.observation_space.shape[0]
         self.act_dim = self.env.action_space.n
         self.action_space = self.env.action_space
@@ -30,21 +30,21 @@ class AtariEnv():
 
     def reset(self, seed=None):
         if seed:
-            observation, _ = self.env.reset(seed)
+            observation = self.env.reset(seed)
         else:
-            observation, _ = self.env.reset()
+            observation = self.env.reset()
         observation = self.pre_process(observation)
         self.buffer = [observation,]*self.n_buffer
 
     def step(self, action):
-        observation, reward, terminated, truncated, _ = self.env.step(action)
+        observation, reward, terminated, _ = self.env.step(action)
         observation = self.pre_process(observation)
         self.buffer.pop(0)
         self.buffer.append(observation)
         next_state = self.get_state()
-        if terminated or truncated:
+        if terminated:
             self.buffer = None
-        return next_state, self.get_reward(observation, reward), terminated or truncated
+        return next_state, self.get_reward(observation, reward), terminated
     
     def render(self):
         return self.env.render()/255

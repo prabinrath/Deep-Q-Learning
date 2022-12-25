@@ -56,17 +56,23 @@ def optimize_policy(samples):
     states, actions, rewards, next_states, terminals = zip(*samples)
     states = torch.tensor(np.vstack(states), device=device)
     actions = torch.tensor(np.vstack(actions), device=device)
+    rewards = torch.tensor(np.vstack(rewards), device=device)
     next_states = torch.tensor(np.vstack(next_states), device=device)
-    with torch.no_grad():
-        policy.eval()
-        next_actions = torch.argmax(policy(next_states),1).unsqueeze(1)
-    policy.train()    
-    q_sa = policy(states).gather(1, actions).squeeze()    
-    with torch.no_grad():
-        target.eval()        
-        q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
-    q_sa_target = [rewards[j]+GAMMA*q_nsa_max[j].item()*(1-terminals[j]) for j in range(len(rewards))]
-    q_sa_target = torch.tensor(q_sa_target, device=device)
+    terminals = torch.tensor(np.vstack(terminals), device=device)
+
+    policy.train()
+    target.eval()
+
+    q_sa = policy(states)
+    q_nsa = policy(next_states)    
+    q_nsa_target = target(next_states)
+
+    q_sa = q_sa.gather(1, actions).squeeze()
+    q_nsa_target = q_nsa_target.gather(1, torch.argmax(q_nsa,1).unsqueeze(1)).squeeze(1)
+    rewards = rewards.squeeze()
+    terminals = terminals.squeeze()
+    q_sa_target = rewards + GAMMA * q_nsa_target * (1 - terminals.int())
+
     # Optimize on the TD loss
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
@@ -123,7 +129,7 @@ for episode in range(EPISODES):
 
         # memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
         memory.push((state, action, reward, next_state, done))
-        if memory.length()<MEMORY_BUFFER*0.5:
+        if memory.length()<MEMORY_BUFFER*0.005:
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))

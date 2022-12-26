@@ -105,22 +105,7 @@ recent_train_reward = deque(maxlen=100)
 recent_valid_history = deque(maxlen=100)
 
 for episode in range(EPISODES):
-    # if max_valid_reward > max_possible_reward*0.98:
-    #     RENDER = True
-    valid_reward = validate_policy()    
-    max_valid_reward = max(valid_reward,max_valid_reward)
-    valid_reward_history.append(valid_reward)
-    recent_valid_history.append(valid_reward)
-
-    # Save model when there is a performance improvement
-    if max_valid_reward>max_reward_target:
-        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
-        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(ddqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if max_valid_reward==max_possible_reward:
-            print('Best Model Achieved !!!')
-            break
-    
+    print(memory.length())
     # Default max episode steps is defined in Gym environments
     done = False
     episode_reward = 0
@@ -143,7 +128,24 @@ for episode in range(EPISODES):
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)
-    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Avg Train Reward:', np.mean(recent_train_reward), ' | Avg Valid Reward:', np.mean(recent_valid_history))
+
+    # if max_valid_reward > max_possible_reward*0.98:
+    #     RENDER = True
+    valid_reward = validate_policy()    
+    max_valid_reward = max(valid_reward,max_valid_reward)
+    valid_reward_history.append(valid_reward)
+    recent_valid_history.append(valid_reward)
+
+    # Save model when there is a performance improvement
+    if max_valid_reward>max_reward_target:
+        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
+        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(ddqn'+str(int(max_valid_reward))+')'+'.dqn')
+        if max_valid_reward==max_possible_reward:
+            print('Best Model Achieved !!!')
+            break
+
+    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', np.mean(recent_train_reward), ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', np.mean(recent_valid_history))
 
 # RENDER = True
 # validate_policy()

@@ -3,6 +3,7 @@ import numpy as np
 
 class ReplayMemory():
     def __init__(self, max_len=10000):
+        print('Replay Memory')
         self.queue = []
         self.max_len = max_len
     
@@ -19,6 +20,7 @@ class ReplayMemory():
 
 class BatchReplayMemory():
     def __init__(self, n_buffer, max_len=10000):
+        print('Batched Replay Memory')
         self.queue = []
         self.max_len = max_len
         self.n_buffer = n_buffer

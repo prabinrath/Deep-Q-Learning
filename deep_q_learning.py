@@ -46,8 +46,8 @@ def select_action(state, act_dim):
     if np.random.uniform() < eps:
         return np.random.choice(act_dim)
     else:
-        with torch.no_grad():
-            policy.eval()
+        policy.eval()
+        with torch.no_grad():            
             q_sa = policy(torch.tensor(state, device=device))
         return torch.argmax(q_sa[0]).item()
 
@@ -55,16 +55,21 @@ def optimize_policy(samples):
     states, actions, rewards, next_states, terminals = zip(*samples)
     states = torch.tensor(np.vstack(states), device=device)
     actions = torch.tensor(np.vstack(actions), device=device)
+    rewards = torch.tensor(np.vstack(rewards), device=device)
     next_states = torch.tensor(np.vstack(next_states), device=device)
+    terminals = torch.tensor(np.vstack(terminals), device=device)
+
     policy.train()
     q_sa = policy(states).gather(1, actions).squeeze()
     with torch.no_grad():
         target.eval()
         q_nsa_max = target(next_states).max(1).values
-    q_sa_target = [rewards[j]+GAMMA*q_nsa_max[j].item()*(1-terminals[j]) for j in range(len(rewards))]
-    q_sa_target = torch.tensor(q_sa_target, device=device)
+    rewards = rewards.squeeze()
+    terminals = terminals.squeeze()
+    q_sa_target = rewards + GAMMA * q_nsa_max * (1 - terminals.int())
+
     # Optimize on the TD loss
-    loss = loss_fn(q_sa, q_sa_target)
+    loss = loss_fn(q_sa, q_sa_target.detach())
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()            

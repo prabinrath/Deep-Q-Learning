@@ -28,9 +28,6 @@ environment = 'Pong-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')
-if LOAD_SAVED_MODEL:
-    policy.load_state_dict(torch.load(MODEL_PATH))
-    target.load_state_dict(policy.state_dict())
 target.eval()
 renv = deepcopy(env)
 loss_fn = nn.MSELoss()
@@ -40,6 +37,10 @@ optimizer = optim.Adam(policy.parameters(), lr=LR)
 memory = ReplayMemory(MEMORY_BUFFER)
 
 glob_frame = 0
+if LOAD_SAVED_MODEL:
+    policy.load_state_dict(torch.load(MODEL_PATH))
+    target.load_state_dict(policy.state_dict())
+    glob_frame = EXPLORATION_FRAMES
 
 def get_epsilon():
     # Linear Annealing
@@ -75,7 +76,7 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     optimizer.step()            
 
 def validate_policy():    
@@ -118,7 +119,7 @@ for episode in range(EPISODES):
         glob_frame+=1
 
         memory.push((state, action, reward, next_state, done))
-        if memory.length()<MEMORY_BUFFER*0.008:
+        if memory.length()<MEMORY_BUFFER*0.8:
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))
@@ -140,7 +141,7 @@ for episode in range(EPISODES):
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn-gc'+str(int(max_valid_reward))+')'+'.dqn')
         if max_valid_reward==max_possible_reward:
             print('Best Model Achieved !!!')
             break

@@ -69,7 +69,7 @@ def optimize_policy(samples):
     q_sa = policy(states).gather(1, actions).squeeze()
     with torch.no_grad(): 
         next_actions = policy(next_states).max(1).indices.unsqueeze(1)
-        q_nsa_max = target(states).gather(1, next_actions).squeeze()
+        q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
         q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1 - terminals.squeeze().int())
 
     # Optimize on the TD loss

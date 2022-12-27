@@ -19,6 +19,14 @@
             "program": "deep_q_learning_dd.py",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Play",
+            "type": "python",
+            "request": "launch",
+            "program": "play_model.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

@@ -96,7 +96,7 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 19 # Allow few misses
+max_possible_reward = 18 # Allow few misses
 reward_increment = max_possible_reward/10
 max_valid_reward = -21
 reward_history = []
@@ -104,7 +104,7 @@ max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
 valid_reward_history = []
 recent_train_reward = deque(maxlen=100)
-recent_valid_history = deque(maxlen=100)
+recent_valid_reward = deque(maxlen=100)
 
 for episode in range(EPISODES):
     # Default max episode steps is defined in Gym environments
@@ -128,24 +128,26 @@ for episode in range(EPISODES):
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)
+    avg_train_reward = np.mean(recent_train_reward)
 
     # if max_valid_reward > max_possible_reward*0.98:
     #     RENDER = True
     valid_reward = validate_policy()    
     max_valid_reward = max(valid_reward,max_valid_reward)
     valid_reward_history.append(valid_reward)
-    recent_valid_history.append(valid_reward)
+    recent_valid_reward.append(valid_reward)
+    avg_valid_reward = np.mean(recent_valid_reward)
 
     # Save model when there is a performance improvement
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
         torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if max_valid_reward==max_possible_reward:
+        if avg_valid_reward>=max_possible_reward:
             print('Best Model Achieved !!!')
             break
 
-    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', np.mean(recent_train_reward), ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', np.mean(recent_valid_history))
+    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
 
 # RENDER = True
 # validate_policy()

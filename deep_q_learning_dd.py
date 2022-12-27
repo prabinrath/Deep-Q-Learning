@@ -24,7 +24,7 @@ EPISODES = 10000 # Number of episodes for training
 LOAD_SAVED_MODEL = False
 MODEL_PATH = ''
 
-environment = 'Pong-v4'
+environment = 'PongDeterministic-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
@@ -66,21 +66,17 @@ def optimize_policy(samples):
     next_states = torch.tensor(np.vstack(next_states), device=device)
     terminals = torch.tensor(np.vstack(terminals), device=device)
 
-    q_sa = policy(states)
-    q_nsa = policy(next_states)    
-    q_nsa_target = target(next_states)
-
-    q_sa = q_sa.gather(1, actions).squeeze()
-    q_nsa_target = q_nsa_target.gather(1, torch.argmax(q_nsa,1).unsqueeze(1)).squeeze(1)
-    rewards = rewards.squeeze()
-    terminals = terminals.squeeze()
-    q_sa_target = rewards + GAMMA * q_nsa_target * (1 - terminals.int())
+    q_sa = policy(states).gather(1, actions).squeeze()
+    with torch.no_grad(): 
+        next_actions = policy(next_states).max(1).indices.unsqueeze(1)
+        q_nsa_max = target(states).gather(1, next_actions).squeeze()
+        q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1 - terminals.squeeze().int())
 
     # Optimize on the TD loss
-    loss = loss_fn(q_sa, q_sa_target)
+    loss = loss_fn(q_sa, q_sa_target.detach())
     optimizer.zero_grad()
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     optimizer.step()            
 
 def validate_policy():    
@@ -101,7 +97,7 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 21
+max_possible_reward = 19 # Allow few misses
 reward_increment = max_possible_reward/10
 max_valid_reward = -21
 max_reward_target = max_valid_reward + reward_increment
@@ -144,7 +140,7 @@ for episode in range(EPISODES):
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn-gc'+str(int(max_valid_reward))+')'+'.dqn')
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn'+str(int(max_valid_reward))+')'+'.dqn')
         if max_valid_reward==max_possible_reward:
             print('Best Model Achieved !!!')
             break

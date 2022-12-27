@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
-from dqn_utils import BatchReplayMemory, ReplayMemory
+from dqn_utils import ReplayMemory
 from copy import deepcopy
 import cv2
 from collections import deque
@@ -21,18 +21,22 @@ EXPLORATION_FRAMES = 300000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
+LOAD_SAVED_MODEL = False
+MODEL_PATH = ''
 
 environment = 'Pong-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
+if LOAD_SAVED_MODEL:
+    policy.load_state_dict(torch.load(MODEL_PATH))
+    target.load_state_dict(policy.state_dict())
 target.eval()
 renv = deepcopy(env)
 loss_fn = nn.MSELoss()
 optimizer = optim.Adam(policy.parameters(), lr=LR)
 
 # Memory for Experience Replay
-# memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
 memory = ReplayMemory(MEMORY_BUFFER)
 
 glob_frame = 0
@@ -105,7 +109,6 @@ recent_train_reward = deque(maxlen=100)
 recent_valid_history = deque(maxlen=100)
 
 for episode in range(EPISODES):
-    print(memory.length())
     # Default max episode steps is defined in Gym environments
     done = False
     episode_reward = 0
@@ -116,7 +119,6 @@ for episode in range(EPISODES):
         episode_reward+=reward      
         glob_frame+=1
 
-        # memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
         memory.push((state, action, reward, next_state, done))
         if memory.length()<MEMORY_BUFFER*0.8:
             continue
@@ -140,7 +142,7 @@ for episode in range(EPISODES):
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(ddqn'+str(int(max_valid_reward))+')'+'.dqn')
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn'+str(int(max_valid_reward))+')'+'.dqn')
         if max_valid_reward==max_possible_reward:
             print('Best Model Achieved !!!')
             break

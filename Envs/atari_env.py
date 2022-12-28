@@ -18,7 +18,7 @@ class AtariEnv():
         gray = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)  
         reshaped = cv2.resize(gray, (84,110))
         cropped = reshaped[18:102,:]/255
-        return np.expand_dims(cropped, 0)
+        return np.expand_dims(cropped, 0).astype(np.float32)
 
     def get_state(self):
         if self.buffer == None:

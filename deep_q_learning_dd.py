@@ -55,7 +55,7 @@ def select_action(state, act_dim, eps=None):
 def optimize_policy(samples):
     states, actions, rewards, next_states, terminals = zip(*samples)
     states = torch.tensor(np.vstack(states), device=device, dtype=torch.float)
-    actions = torch.tensor(np.vstack(actions), device=device, dtype=torch.float)
+    actions = torch.tensor(np.vstack(actions), device=device)
     rewards = torch.tensor(np.vstack(rewards), device=device, dtype=torch.float)
     next_states = torch.tensor(np.vstack(next_states), device=device, dtype=torch.float)
     terminals = torch.tensor(np.vstack(terminals), device=device, dtype=torch.float)
@@ -64,7 +64,7 @@ def optimize_policy(samples):
     # with torch.no_grad(): 
     next_actions = policy(next_states).max(1).indices.unsqueeze(1)
     q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
-    q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1 - terminals.squeeze().int())
+    q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
 
     # Optimize on the TD loss
     loss = loss_fn(q_sa, q_sa_target.detach())
@@ -111,7 +111,7 @@ for episode in range(EPISODES):
         episode_reward+=reward      
         glob_frame+=1
 
-        memory.push((state, action, reward, next_state, done))
+        memory.push((state, action, reward, next_state, float(done)))
         if memory.length()<MEMORY_BUFFER*0.8:
             continue
         else:

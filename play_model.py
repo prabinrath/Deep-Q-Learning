@@ -4,9 +4,9 @@ from get_env_and_learner import GetEnvAndLearner
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-MODEL_PATH = 'Benchmarks/PongDeterministic-v4(dqn19).dqn'
+MODEL_PATH = 'Benchmarks/PongDeterministic-v4(dddqn21).dqn'
 environment = 'PongDeterministic-v4'
-env, policy, _ = GetEnvAndLearner(name = environment, learner='dqn')
+env, policy, _ = GetEnvAndLearner(name = environment, learner='dddqn')
 policy.load_state_dict(torch.load(MODEL_PATH))
 
 def select_action(state, act_dim, eps=None):    

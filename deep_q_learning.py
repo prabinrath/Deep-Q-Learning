@@ -5,13 +5,11 @@ import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
 from dqn_utils import ReplayMemory
 from copy import deepcopy
-import cv2
 from collections import deque
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 # Constant Parameters
-RENDER = False
 GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
@@ -76,21 +74,14 @@ def validate_policy():
     renv.reset()
     done = False
     valid_reward = 0
-    if RENDER:
-        cv2.namedWindow(environment, cv2.WINDOW_NORMAL)
-    # cv2.resizeWindow(environment, 300, 300)
     while not done:       
         state = renv.get_state()
-        if RENDER:
-            rgb = renv.render()
-            cv2.imshow(environment, rgb)
-            cv2.waitKey(10)
         action = select_action(state, renv.act_dim, EPSILON_END)
         _, reward, done = renv.step(action)
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 18 # Allow few misses
+max_possible_reward = 21
 reward_increment = max_possible_reward/10
 max_valid_reward = -21
 reward_history = []
@@ -124,8 +115,6 @@ for episode in range(EPISODES):
     recent_train_reward.append(episode_reward)
     avg_train_reward = round(np.mean(recent_train_reward),3)
 
-    # if max_valid_reward > max_possible_reward*0.98:
-    #     RENDER = True
     valid_reward = validate_policy()    
     max_valid_reward = max(valid_reward,max_valid_reward)
     valid_reward_history.append(valid_reward)
@@ -133,18 +122,15 @@ for episode in range(EPISODES):
     avg_valid_reward = round(np.mean(recent_valid_reward),3)
 
     # Save model when there is a performance improvement
-    if max_valid_reward>max_reward_target:
+    if max_valid_reward>=max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
         torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-    if avg_valid_reward>=max_possible_reward:
-        print('Best Model Achieved !!!')
-        break
+        if max_valid_reward>=max_possible_reward:
+            print('Best Model Achieved !!!')
+            break
 
     print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
-
-# RENDER = True
-# validate_policy()
 
 reward_history = np.array(train_reward_history)
 smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')

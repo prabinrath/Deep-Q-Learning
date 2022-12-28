@@ -47,5 +47,5 @@ class AtariEnv():
         return next_state, self.get_reward(observation, reward), terminated
     
     def render(self):
-        return self.env.render()/255
+        return self.env.render(mode="rgb_array").astype(np.float32)/255
         

@@ -42,5 +42,5 @@ class AtariLearnerAdv(nn.Module):
         a = F.relu(self.adv1(x))
         a = self.adv2(a)
 
-        q = v + (a - a.mean())
+        q = v + (a - a.mean(dim=1, keepdim=True))
         return q

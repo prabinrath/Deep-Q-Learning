@@ -61,12 +61,12 @@ def optimize_policy(samples):
     terminals = torch.tensor(np.vstack(terminals), device=device, dtype=torch.float)
 
     q_sa = policy(states).gather(1, actions).squeeze()     
-    # with torch.no_grad(): 
-    q_nsa_max = target(next_states).max(1).values
-    q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
+    with torch.no_grad(): 
+        q_nsa_max = target(next_states).max(1).values
+        q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
 
     # Optimize on the TD loss
-    loss = loss_fn(q_sa, q_sa_target.detach())
+    loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
     # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)

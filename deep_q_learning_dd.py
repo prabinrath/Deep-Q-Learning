@@ -12,7 +12,7 @@ print(device)
 
 # Constant Parameters
 RENDER = False
-GAMMA = 0.99 # Discount factor
+GAMMA = 0.97 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
@@ -61,13 +61,13 @@ def optimize_policy(samples):
     terminals = torch.tensor(np.vstack(terminals), device=device, dtype=torch.float)
 
     q_sa = policy(states).gather(1, actions).squeeze()
-    # with torch.no_grad(): 
-    next_actions = policy(next_states).max(1).indices.unsqueeze(1)
-    q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
-    q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
+    with torch.no_grad(): 
+        next_actions = policy(next_states).max(1).indices.unsqueeze(1)
+        q_nsa_max = target(next_states).gather(1, next_actions).squeeze()
+        q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
 
     # Optimize on the TD loss
-    loss = loss_fn(q_sa, q_sa_target.detach())
+    loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
     # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)

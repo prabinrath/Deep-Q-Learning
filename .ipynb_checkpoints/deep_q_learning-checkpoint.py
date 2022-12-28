@@ -3,9 +3,10 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from get_env_and_learner import GetEnvAndLearner
-from dqn_utils import BatchReplayMemory, ReplayMemory
+from dqn_utils import ReplayMemory
 from copy import deepcopy
 import cv2
+from collections import deque
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -13,24 +14,24 @@ print(device)
 RENDER = False
 GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
-LR = 0.0001 # AdamW learning rate
+LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 1000000 # Annealing frames
+EXPLORATION_FRAMES = 500000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
 
-environment = 'Pong-v4'
+environment = 'PongDeterministic-v4'
 env_folder = 'Pong'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')
+target.eval()
 renv = deepcopy(env)
-loss_fn = nn.SmoothL1Loss()
-optimizer = optim.AdamW(policy.parameters(), lr=LR, amsgrad=True)
+loss_fn = nn.MSELoss()
+optimizer = optim.Adam(policy.parameters(), lr=LR)
 
 # Memory for Experience Replay
-# memory = BatchReplayMemory(env.n_buffer, MEMORY_BUFFER)
 memory = ReplayMemory(MEMORY_BUFFER)
 
 glob_frame = 0
@@ -48,26 +49,27 @@ def select_action(state, act_dim, eps=None):
         return np.random.choice(act_dim)
     else:
         with torch.no_grad():
-            policy.eval()
-            q_sa = policy(torch.tensor(state, device=device))
+            q_sa = policy(torch.tensor(state, device=device, dtype=torch.float))
         return torch.argmax(q_sa[0]).item()
 
 def optimize_policy(samples):
     states, actions, rewards, next_states, terminals = zip(*samples)
-    states = torch.tensor(np.vstack(states), device=device)
+    states = torch.tensor(np.vstack(states), device=device, dtype=torch.float)
     actions = torch.tensor(np.vstack(actions), device=device)
-    next_states = torch.tensor(np.vstack(next_states), device=device)
-    policy.train()
-    q_sa = policy(states).gather(1, actions).squeeze()
-    with torch.no_grad():
-        target.eval()
+    rewards = torch.tensor(np.vstack(rewards), device=device, dtype=torch.float)
+    next_states = torch.tensor(np.vstack(next_states), device=device, dtype=torch.float)
+    terminals = torch.tensor(np.vstack(terminals), device=device, dtype=torch.float)
+
+    q_sa = policy(states).gather(1, actions).squeeze()     
+    with torch.no_grad(): 
         q_nsa_max = target(next_states).max(1).values
-    q_sa_target = [rewards[j]+GAMMA*q_nsa_max[j].item()*(1-terminals[j]) for j in range(len(rewards))]
-    q_sa_target = torch.tensor(q_sa_target, device=device)
+        q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1.0 - terminals.squeeze())
+
     # Optimize on the TD loss
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
+    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     optimizer.step()            
 
 def validate_policy():    
@@ -88,39 +90,29 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 21
+max_possible_reward = 18 # Allow few misses
 reward_increment = max_possible_reward/10
 max_valid_reward = -21
 reward_history = []
 max_reward_target = max_valid_reward + reward_increment
-for episode in range(EPISODES):
-    # if max_valid_reward > max_possible_reward*0.98:
-    #     RENDER = True
-    valid_reward = validate_policy()
-    print('Episode: ', episode, ' | Validation Reward: ', valid_reward, ' | Epsilon: ', get_epsilon(), ' | Memory Len', memory.length())
-    max_valid_reward = max(valid_reward,max_valid_reward)
-    reward_history.append(valid_reward)
+train_reward_history = []
+valid_reward_history = []
+recent_train_reward = deque(maxlen=100)
+recent_valid_reward = deque(maxlen=100)
 
-    # Save model when there is a performance improvement
-    if max_valid_reward>max_reward_target:
-        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
-        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if max_valid_reward==max_possible_reward:
-            print('Best Model Achieved !!!')
-            break
-    
+for episode in range(EPISODES):
     # Default max episode steps is defined in Gym environments
     done = False
+    episode_reward = 0
     while not done:       
         state = env.get_state()
         action = select_action(state, env.act_dim)
-        next_state, reward, done = env.step(action)        
+        next_state, reward, done = env.step(action)  
+        episode_reward+=reward      
         glob_frame+=1
 
-        # memory.push((state[:,env.n_buffer-1,:,:], action, reward, next_state[:,env.n_buffer-1,:,:], done))
-        memory.push((state, action, reward, next_state, done))
-        if memory.length()<MEMORY_BUFFER*0.5:
+        memory.push((state, action, reward, next_state, float(done)))
+        if memory.length()<MEMORY_BUFFER*0.8:
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))
@@ -128,16 +120,50 @@ for episode in range(EPISODES):
         if glob_frame%UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
 
+    train_reward_history.append(episode_reward)
+    recent_train_reward.append(episode_reward)
+    avg_train_reward = round(np.mean(recent_train_reward),3)
+
+    # if max_valid_reward > max_possible_reward*0.98:
+    #     RENDER = True
+    valid_reward = validate_policy()    
+    max_valid_reward = max(valid_reward,max_valid_reward)
+    valid_reward_history.append(valid_reward)
+    recent_valid_reward.append(valid_reward)
+    avg_valid_reward = round(np.mean(recent_valid_reward),3)
+
+    # Save model when there is a performance improvement
+    if max_valid_reward>max_reward_target:
+        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
+        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
+    if avg_valid_reward>=max_possible_reward:
+        print('Best Model Achieved !!!')
+        break
+
+    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
+
 # RENDER = True
 # validate_policy()
 
-reward_history = np.array(reward_history)
+reward_history = np.array(train_reward_history)
 smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
 import matplotlib.pyplot as plt
-plt.plot(reward_history, label='Real')
-plt.plot(smooth_reward_history, label='Smooth')
+plt.plot(reward_history, label='Reward')
+plt.plot(smooth_reward_history, label='Smooth Reward')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
 # plt.show()
-plt.savefig('res.png')
+plt.savefig('res_train_dqn.png')
+
+reward_history = np.array(valid_reward_history)
+smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
+import matplotlib.pyplot as plt
+plt.plot(reward_history, label='Reward')
+plt.plot(smooth_reward_history, label='Smooth Reward')
+plt.xlabel('Episode')
+plt.ylabel('Reward')
+plt.legend(loc='upper left')
+# plt.show()
+plt.savefig('res_valid_dqn.png')

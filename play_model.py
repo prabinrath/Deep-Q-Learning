@@ -27,4 +27,3 @@ while not done:
     env.render()
     if done:
         observation = env.reset()
-env.close()

@@ -13,7 +13,7 @@ print(device)
 # Constant Parameters
 RENDER = False
 GAMMA = 0.97 # Discount factor
-UPDATE_INTERVAL = 1000 # Interval for target update
+UPDATE_INTERVAL = 500 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
@@ -67,9 +67,9 @@ def optimize_policy(samples):
     terminals = torch.tensor(np.vstack(terminals), device=device)
 
     q_sa = policy(states).gather(1, actions).squeeze()     
-    with torch.no_grad(): 
-        q_nsa_max = target(next_states).max(1).values
-        q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1 - terminals.squeeze().int())
+    # with torch.no_grad(): 
+    q_nsa_max = target(next_states).max(1).values
+    q_sa_target = rewards.squeeze() + GAMMA * q_nsa_max * (1 - terminals.squeeze().int())
 
     # Optimize on the TD loss
     loss = loss_fn(q_sa, q_sa_target.detach())
@@ -128,7 +128,7 @@ for episode in range(EPISODES):
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)
-    avg_train_reward = np.mean(recent_train_reward)
+    avg_train_reward = round(np.mean(recent_train_reward),3)
 
     # if max_valid_reward > max_possible_reward*0.98:
     #     RENDER = True
@@ -136,16 +136,16 @@ for episode in range(EPISODES):
     max_valid_reward = max(valid_reward,max_valid_reward)
     valid_reward_history.append(valid_reward)
     recent_valid_reward.append(valid_reward)
-    avg_valid_reward = np.mean(recent_valid_reward)
+    avg_valid_reward = round(np.mean(recent_valid_reward),3)
 
     # Save model when there is a performance improvement
     if max_valid_reward>max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
         torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if avg_valid_reward>=max_possible_reward:
-            print('Best Model Achieved !!!')
-            break
+    if avg_valid_reward>=max_possible_reward:
+        print('Best Model Achieved !!!')
+        break
 
     print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
 

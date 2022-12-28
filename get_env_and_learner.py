@@ -17,15 +17,15 @@ def GetEnvAndLearner(name='CartPole-v1', learner='dqn'):
     elif (name == 'PongDeterministic-v4' or name == 'Pong-v4') and learner=='dqn':
         print('DQN')
         env = AtariEnv(name)
-        policy = AtariLearner(env.n_buffer, env.act_dim).double().to(device)
-        target = AtariLearner(env.n_buffer, env.act_dim).double().to(device)
+        policy = AtariLearner(env.n_buffer, env.act_dim).to(device)
+        target = AtariLearner(env.n_buffer, env.act_dim).to(device)
         target.load_state_dict(policy.state_dict())
         return env, policy, target
     elif (name == 'PongDeterministic-v4' or name == 'Pong-v4') and learner=='dddqn':
         print('Duel Double DQN')
         env = AtariEnv(name)
-        policy = AtariLearnerAdv(env.n_buffer, env.act_dim).double().to(device)
-        target = AtariLearnerAdv(env.n_buffer, env.act_dim).double().to(device)
+        policy = AtariLearnerAdv(env.n_buffer, env.act_dim).to(device)
+        target = AtariLearnerAdv(env.n_buffer, env.act_dim).to(device)
         target.load_state_dict(policy.state_dict())
         return env, policy, target
     else:

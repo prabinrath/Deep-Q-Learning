@@ -12,8 +12,8 @@ print(device)
 
 # Constant Parameters
 RENDER = False
-GAMMA = 0.97 # Discount factor
-UPDATE_INTERVAL = 500 # Interval for target update
+GAMMA = 0.99 # Discount factor
+UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
@@ -21,8 +21,6 @@ EXPLORATION_FRAMES = 500000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
-LOAD_SAVED_MODEL = False
-MODEL_PATH = ''
 
 environment = 'PongDeterministic-v4'
 env_folder = 'Pong'
@@ -37,10 +35,6 @@ optimizer = optim.Adam(policy.parameters(), lr=LR)
 memory = ReplayMemory(MEMORY_BUFFER)
 
 glob_frame = 0
-if LOAD_SAVED_MODEL:
-    policy.load_state_dict(torch.load(MODEL_PATH))
-    target.load_state_dict(policy.state_dict())
-    glob_frame = EXPLORATION_FRAMES
 
 def get_epsilon():
     # Linear Annealing
@@ -55,16 +49,16 @@ def select_action(state, act_dim, eps=None):
         return np.random.choice(act_dim)
     else:
         with torch.no_grad():
-            q_sa = policy(torch.tensor(state, device=device))
+            q_sa = policy(torch.tensor(state, device=device, dtype=torch.float))
         return torch.argmax(q_sa[0]).item()
 
 def optimize_policy(samples):
     states, actions, rewards, next_states, terminals = zip(*samples)
-    states = torch.tensor(np.vstack(states), device=device)
-    actions = torch.tensor(np.vstack(actions), device=device)
-    rewards = torch.tensor(np.vstack(rewards), device=device)
-    next_states = torch.tensor(np.vstack(next_states), device=device)
-    terminals = torch.tensor(np.vstack(terminals), device=device)
+    states = torch.tensor(np.vstack(states), device=device, dtype=torch.float)
+    actions = torch.tensor(np.vstack(actions), device=device, dtype=torch.float)
+    rewards = torch.tensor(np.vstack(rewards), device=device, dtype=torch.float)
+    next_states = torch.tensor(np.vstack(next_states), device=device, dtype=torch.float)
+    terminals = torch.tensor(np.vstack(terminals), device=device, dtype=torch.float)
 
     q_sa = policy(states).gather(1, actions).squeeze()     
     # with torch.no_grad(): 

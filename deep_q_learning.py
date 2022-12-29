@@ -15,7 +15,7 @@ UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 500000 # Annealing frames
+EXPLORATION_FRAMES = 150000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
@@ -132,24 +132,27 @@ for episode in range(EPISODES):
 
     print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
 
+padding = 10
 reward_history = np.array(train_reward_history)
-smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
+smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
 import matplotlib.pyplot as plt
 plt.plot(reward_history, label='Reward')
 plt.plot(smooth_reward_history, label='Smooth Reward')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
+plt.title('Deep Q-Learning')
 # plt.show()
 plt.savefig('res_train_dqn.png')
-
+plt.clf()
 reward_history = np.array(valid_reward_history)
-smooth_reward_history = np.convolve(reward_history, np.ones(20)/20, mode='same')
+smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
 import matplotlib.pyplot as plt
 plt.plot(reward_history, label='Reward')
 plt.plot(smooth_reward_history, label='Smooth Reward')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
+plt.title('Duel Double Deep Q-Learning')
 # plt.show()
 plt.savefig('res_valid_dqn.png')

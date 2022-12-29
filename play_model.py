@@ -35,7 +35,7 @@ while not done:
     if done:
         observation = env.reset()
 
-GENERATE_GIF = False
+GENERATE_GIF = True
 if GENERATE_GIF:
     import imageio      
     print("Saving GIF file")

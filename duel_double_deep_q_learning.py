@@ -10,12 +10,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 # Constant Parameters
-GAMMA = 0.97 # Discount factor
+GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 100000 # Annealing frames
+EXPLORATION_FRAMES = 150000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 50000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
@@ -141,7 +141,7 @@ plt.plot(smooth_reward_history, label='Smooth Reward')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.legend(loc='upper left')
-plt.title('Deep Q-Learning')
+plt.title('Duel Double Deep Q-Learning')
 # plt.show()
 plt.savefig('res_train_dddqn.png')
 plt.clf()

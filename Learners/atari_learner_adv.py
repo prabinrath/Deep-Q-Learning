@@ -30,7 +30,8 @@ class AtariLearnerAdv(nn.Module):
         w = (in_dim[1]+2*padding[1]-dialation[1]*(kernel_size[1]-1)-1)//stride[1]+1
         return h, w
 
-    def forward(self, x):
+    def forward(self, x_):
+        x = x_/255.0
         x = F.relu(self.bn1(self.cnn1(x)))
         x = F.relu(self.bn2(self.cnn2(x)))
         x = F.relu(self.bn3(self.cnn3(x)))

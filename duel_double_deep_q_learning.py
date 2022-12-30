@@ -15,9 +15,9 @@ UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 150000 # Annealing frames
+EXPLORATION_FRAMES = 300000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
-MEMORY_BUFFER = 50000 # Replay buffer size
+MEMORY_BUFFER = 100000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
 
 environment = 'PongDeterministic-v4'
@@ -130,7 +130,7 @@ for episode in range(EPISODES):
             print('Best Model Achieved !!!')
             break
 
-    print('Episode: ', episode, ' | Epsilon: ', get_epsilon(), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
+    print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
 
 padding = 10
 reward_history = np.array(train_reward_history)

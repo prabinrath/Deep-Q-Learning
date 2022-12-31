@@ -57,6 +57,7 @@ class BreakoutEnv():
         self.action_space = self.env.action_space
         self.n_buffer = 4
         self.buffer = None
+        self.life = 5
 
     def pre_process(self, observation):
         '''
@@ -64,15 +65,17 @@ class BreakoutEnv():
         '''
         gray = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)  
         reshaped = cv2.resize(gray, (84,110))
-        cropped = reshaped[18:102,:]/255
-        return np.expand_dims(cropped, 0).astype(np.float32)
+        cropped = reshaped[18:102,:]
+        return np.expand_dims(cropped, 0)
 
     def get_state(self):
         if self.buffer == None:
             self.reset()
         return np.expand_dims(np.vstack(self.buffer), 0)
 
-    def get_reward(self, observation, reward):
+    def get_reward(self, observation, reward, info):
+        reward += info['ale.lives'] - self.life
+        self.life = info['ale.lives']
         return reward
 
     def reset(self, seed=None):
@@ -82,16 +85,17 @@ class BreakoutEnv():
             observation = self.env.reset()
         observation = self.pre_process(observation)
         self.buffer = [observation,]*self.n_buffer
+        self.life = 5
 
     def step(self, action):
-        observation, reward, terminated, _ = self.env.step(action)
+        observation, reward, terminated, info = self.env.step(action)
         observation = self.pre_process(observation)
         self.buffer.pop(0)
         self.buffer.append(observation)
         next_state = self.get_state()
         if terminated:
             self.buffer = None
-        return next_state, self.get_reward(observation, reward), terminated
+        return next_state, self.get_reward(observation, reward, info), terminated
     
     def render(self):
         return self.env.render(mode="rgb_array").astype(np.float32)/255

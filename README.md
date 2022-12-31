@@ -1,5 +1,5 @@
 # Deep-Q-Learning
- Reinforcement Learning with PyTorch and OpenAI-Gym. This repository has implementation for [Deep-Q-Learning Algorithm](https://arxiv.org/abs/1312.5602) and [Dueling Double Deep-Q-Learning Algorithm](https://arxiv.org/abs/1511.06581). The CNNs have batch normalization layers to expedite the training process. With the current settings, training completes in ~4 hours for both DQN and DDDQN. Training time is determined by the specified exploration frames. Maximum runtime memory requirement is ~13.5 GB for training. Runtime memory requirement depends on the size of experience replay buffer. <br/>
+ Reinforcement Learning with PyTorch and OpenAI-Gym. This repository has implementation for [Deep-Q-Learning Algorithm](https://arxiv.org/abs/1312.5602) and [Dueling Double Deep-Q-Learning Algorithm](https://arxiv.org/abs/1511.06581). The CNNs have batch normalization layers to expedite the training process. With the current settings, training completes in ~4 hours (Ryzen7 + RTX3060) for both DQN and DDDQN. Training time is determined by the specified exploration frames. Maximum runtime memory requirement is ~8.5 GB (100k Memory Buffer) for training. Runtime memory requirement depends on the size of experience replay buffer. <br/>
 
  `main` branch has a preliminary implementation for `Cartpole` environment.
 

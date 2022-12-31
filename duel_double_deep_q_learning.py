@@ -20,8 +20,8 @@ BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 100000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
 
-environment = 'PongDeterministic-v4'
-env_folder = 'Pong'
+environment = 'BreakoutDeterministic-v4'
+env_folder = 'Breakout'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
 target.eval()

@@ -11,11 +11,11 @@ print(device)
 
 # Constant Parameters
 GAMMA = 0.99 # Discount factor
-UPDATE_INTERVAL = 1000 # Interval for target update
+UPDATE_INTERVAL = 10000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 300000 # Annealing frames
+EXPLORATION_FRAMES = 1000000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 100000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
@@ -26,7 +26,7 @@ env_folder = 'Breakout'
 env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')
 target.eval()
 renv = deepcopy(env)
-loss_fn = nn.MSELoss()
+loss_fn = nn.SmoothL1Loss()
 optimizer = optim.Adam(policy.parameters(), lr=LR)
 
 # Memory for Experience Replay
@@ -67,7 +67,7 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    torch.nn.utils.clip_grad_norm_(policy.parameters(), 1)
     optimizer.step()            
 
 def validate_policy():    
@@ -104,6 +104,7 @@ for episode in range(EPISODES):
 
         memory.push((state, action, reward, next_state, float(done)))
         if memory.length()<MEMORY_BUFFER*0.8:
+            glob_frame-=1
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))

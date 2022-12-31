@@ -81,9 +81,9 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
-max_possible_reward = 21
+max_possible_reward = 300
 reward_increment = max_possible_reward/10
-max_valid_reward = -21
+max_valid_reward = -5
 reward_history = []
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []

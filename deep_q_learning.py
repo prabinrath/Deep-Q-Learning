@@ -14,11 +14,11 @@ GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 10000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
-EPSILON_END = 0.05 # Annealing end
+EPSILON_END = 0.1 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
-BATCH_SIZE = 64 # Sampling size from memory
-MEMORY_BUFFER = 100000 # Replay buffer size
-EPISODES = 10000 # Number of episodes for training
+BATCH_SIZE = 32 # Sampling size from memory
+MEMORY_BUFFER = 1000000 # Replay buffer size
+EPISODES = 50000 # Number of episodes for training
 
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
@@ -67,7 +67,8 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(policy.parameters(), 1)
+    for param in policy.parameters():
+        param.grad.data.clamp_(-1, 1)
     optimizer.step()            
 
 def validate_policy():    
@@ -82,7 +83,7 @@ def validate_policy():
     return valid_reward
 
 max_possible_reward = 300
-reward_increment = max_possible_reward/10
+reward_increment = max_possible_reward/50
 max_valid_reward = -5
 reward_history = []
 max_reward_target = max_valid_reward + reward_increment

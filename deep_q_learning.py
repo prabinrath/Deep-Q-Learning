@@ -20,7 +20,7 @@ BATCH_SIZE = 32 # Sampling size from memory
 MEMORY_BUFFER = 1000000 # Replay buffer size
 EPISODES = 50000 # Number of episodes for training
 
-environment = 'BreakoutDeterministic-v4'
+environment = 'BreakoutNoFrameskip-v4'
 env_folder = 'Breakout'
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')

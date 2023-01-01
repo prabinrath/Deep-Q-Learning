@@ -5,9 +5,9 @@ from get_env_and_learner import GetEnvAndLearner
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-MODEL_PATH = 'Benchmarks/PongDeterministic-v4(dddqn21).dqn'
-environment = 'PongDeterministic-v4'
-env, policy, _ = GetEnvAndLearner(name = environment, learner='dddqn')
+MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn5).dqn'
+environment = 'BreakoutDeterministic-v4'
+env, policy, _ = GetEnvAndLearner(name = environment, learner='dqn')
 policy.load_state_dict(torch.load(MODEL_PATH))
 
 def select_action(state, act_dim, eps=None):    
@@ -23,10 +23,12 @@ observation = env.reset()
 done = False
 img_frames = []
 cv2.namedWindow('Agent', cv2.WINDOW_NORMAL)
+net_reward = 0
 while not done:
     state = env.get_state()
     action = select_action(state, env.act_dim)
     next_state, reward, done = env.step(action)  
+    net_reward+=reward
     img = env.render()
     img_frames.append((img*255).astype(np.uint8))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -34,6 +36,8 @@ while not done:
     cv2.waitKey(5)    
     if done:
         observation = env.reset()
+
+print(net_reward)
 
 GENERATE_GIF = False
 if GENERATE_GIF:

@@ -12,7 +12,7 @@ print(device)
 # Constant Parameters
 GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 10000 # Interval for target update
-LR = 0.00025 # Adam learning rate
+LR = 0.0000625 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.1 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
@@ -27,7 +27,7 @@ env, policy, target = GetEnvAndLearner(name = environment, learner='dqn')
 target.eval()
 renv = deepcopy(env)
 loss_fn = nn.SmoothL1Loss()
-optimizer = optim.Adam(policy.parameters(), lr=LR)
+optimizer = optim.Adam(policy.parameters(), lr=LR, eps=1.5e-4)
 
 # Memory for Experience Replay
 memory = ReplayMemory(MEMORY_BUFFER)

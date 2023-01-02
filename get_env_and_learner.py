@@ -32,7 +32,7 @@ def GetEnvAndLearner(name='CartPole-v1', learner='dqn'):
             raise Exception('Learner Not Defined')
         target.load_state_dict(policy.state_dict())
         return env, policy, target
-    elif name == 'BreakoutNoFrameskip-v4':
+    elif name == 'BreakoutDeterministic-v4':
         env = BreakoutEnv(name)
         if learner=='dqn':
             print('DQN')

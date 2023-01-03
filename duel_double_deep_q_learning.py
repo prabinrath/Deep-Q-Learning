@@ -105,6 +105,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     plt.title('Duel Double Deep Q-Learning')
     # plt.show()
     plt.savefig('res_valid_dddqn.png')
+    plt.clf()
 
 max_possible_reward = 300
 reward_increment = max_possible_reward/50

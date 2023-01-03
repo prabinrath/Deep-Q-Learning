@@ -1,4 +1,4 @@
-
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -29,6 +29,14 @@ class AtariLearnerAdv(nn.Module):
         h = (in_dim[0]+2*padding[0]-dialation[0]*(kernel_size[0]-1)-1)//stride[0]+1
         w = (in_dim[1]+2*padding[1]-dialation[1]*(kernel_size[1]-1)-1)//stride[1]+1
         return h, w
+    
+    def init_weights(self, m):
+        if type(m) == nn.Linear:
+            torch.nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+            m.bias.data.fill_(0.0)        
+        if type(m) == nn.Conv2d:
+            torch.nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+            #m.bias.data.fill_(0.1)
 
     def forward(self, x_):
         x = x_/255.0

@@ -6,6 +6,7 @@ from get_env_and_learner import GetEnvAndLearner
 from dqn_utils import ReplayMemory
 from copy import deepcopy
 from collections import deque
+import matplotlib.pyplot as plt
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -14,10 +15,10 @@ GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
 LR = 0.00025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
-EPSILON_END = 0.05 # Annealing end
-EXPLORATION_FRAMES = 300000 # Annealing frames
+EPSILON_END = 0.1 # Annealing end
+EXPLORATION_FRAMES = 1000000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
-MEMORY_BUFFER = 100000 # Replay buffer size
+MEMORY_BUFFER = 1000000 # Replay buffer size
 EPISODES = 10000 # Number of episodes for training
 
 environment = 'BreakoutDeterministic-v4'
@@ -26,7 +27,7 @@ env_folder = 'Breakout'
 env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
 target.eval()
 renv = deepcopy(env)
-loss_fn = nn.MSELoss()
+loss_fn = nn.SmoothL1Loss()
 optimizer = optim.Adam(policy.parameters(), lr=LR)
 
 # Memory for Experience Replay
@@ -68,7 +69,7 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     optimizer.step()            
 
 def validate_policy():    
@@ -82,8 +83,31 @@ def validate_policy():
         valid_reward+=reward
     return valid_reward
 
+def save_stats(train_reward_history, valid_reward_history, padding=10):
+    reward_history = np.array(train_reward_history)
+    smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
+    plt.plot(reward_history, label='Reward')
+    plt.plot(smooth_reward_history, label='Smooth Reward')
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    plt.legend(loc='upper left')
+    plt.title('Duel Double Deep Q-Learning')
+    # plt.show()
+    plt.savefig('res_train_dddqn.png')
+    plt.clf()
+    reward_history = np.array(valid_reward_history)
+    smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
+    plt.plot(reward_history, label='Reward')
+    plt.plot(smooth_reward_history, label='Smooth Reward')
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    plt.legend(loc='upper left')
+    plt.title('Duel Double Deep Q-Learning')
+    # plt.show()
+    plt.savefig('res_valid_dddqn.png')
+
 max_possible_reward = 300
-reward_increment = max_possible_reward/10
+reward_increment = max_possible_reward/50
 max_valid_reward = -5
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
@@ -104,6 +128,7 @@ for episode in range(EPISODES):
 
         memory.push((state, action, reward, next_state, float(done)))
         if memory.length()<MEMORY_BUFFER*0.8:
+            glob_frame-=1
             continue
         else:
             optimize_policy(memory.sample(BATCH_SIZE))
@@ -125,34 +150,10 @@ for episode in range(EPISODES):
     if max_valid_reward>=max_reward_target:
         max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
         print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+        save_stats(train_reward_history, valid_reward_history)
         torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn'+str(int(max_valid_reward))+')'+'.dqn')
         if max_valid_reward>=max_possible_reward:
             print('Best Model Achieved !!!')
             break
 
     print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
-
-padding = 10
-reward_history = np.array(train_reward_history)
-smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
-import matplotlib.pyplot as plt
-plt.plot(reward_history, label='Reward')
-plt.plot(smooth_reward_history, label='Smooth Reward')
-plt.xlabel('Episode')
-plt.ylabel('Reward')
-plt.legend(loc='upper left')
-plt.title('Duel Double Deep Q-Learning')
-# plt.show()
-plt.savefig('res_train_dddqn.png')
-plt.clf()
-reward_history = np.array(valid_reward_history)
-smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
-import matplotlib.pyplot as plt
-plt.plot(reward_history, label='Reward')
-plt.plot(smooth_reward_history, label='Smooth Reward')
-plt.xlabel('Episode')
-plt.ylabel('Reward')
-plt.legend(loc='upper left')
-plt.title('Duel Double Deep Q-Learning')
-# plt.show()
-plt.savefig('res_valid_dddqn.png')

@@ -19,7 +19,7 @@ EPSILON_END = 0.1 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
 BATCH_SIZE = 64 # Sampling size from memory
 MEMORY_BUFFER = 1000000 # Replay buffer size
-EPISODES = 10000 # Number of episodes for training
+EPISODES = 20000 # Number of episodes for training
 
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
@@ -69,7 +69,7 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     optimizer.step()            
 
 def validate_policy():    

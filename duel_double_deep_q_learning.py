@@ -128,7 +128,7 @@ for episode in range(EPISODES):
         glob_frame+=1
 
         memory.push((state, action, reward, next_state, float(done)))
-        if memory.length()<MEMORY_BUFFER*0.8:
+        if memory.length()<MEMORY_BUFFER*0.3:
             glob_frame-=1
             continue
         else:

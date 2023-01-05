@@ -157,3 +157,5 @@ for episode in range(EPISODES):
             break
 
     print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3) , ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
+
+save_stats(train_reward_history, valid_reward_history)

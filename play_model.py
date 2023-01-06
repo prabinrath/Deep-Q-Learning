@@ -5,7 +5,7 @@ from get_env_and_learner import GetEnvAndLearner
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn5).dqn'
+MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn72).dqn'
 environment = 'BreakoutDeterministic-v4'
 env, policy, _ = GetEnvAndLearner(name = environment, learner='dqn')
 policy.load_state_dict(torch.load(MODEL_PATH))
@@ -33,7 +33,7 @@ while not done:
     img_frames.append((img*255).astype(np.uint8))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     cv2.imshow('Agent', img)
-    cv2.waitKey(5)    
+    cv2.waitKey(10)    
     if done:
         observation = env.reset()
 

@@ -27,7 +27,7 @@ net_reward = 0
 while not done:
     state = env.get_state()
     action = select_action(state, env.act_dim)
-    next_state, reward, done = env.step(action)  
+    next_state, reward, done, _ = env.step(action)  
     net_reward+=reward
     img = env.render()
     img_frames.append((img*255).astype(np.uint8))

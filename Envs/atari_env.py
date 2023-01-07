@@ -94,13 +94,14 @@ class BreakoutEnv():
         self.buffer.append(observation)
         next_state = self.get_state()
         reward = self.get_reward(observation, reward, info)
+        terminal_life_lost = False
         if reward == -1:
-            terminated = True
-            # reward = 0
+            terminal_life_lost = True
+            reward = 0
         if terminated:
             self.buffer = None
         
-        return next_state, reward, terminated
+        return next_state, reward, terminated, terminal_life_lost
     
     def render(self):
         return self.env.render(mode="rgb_array").astype(np.float32)/255

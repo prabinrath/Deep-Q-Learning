@@ -78,7 +78,7 @@ def validate_policy():
     while not done:       
         state = renv.get_state()
         action = select_action(state, renv.act_dim, EPSILON_END)
-        _, reward, done = renv.step(action)
+        _, reward, done, _ = renv.step(action)
         valid_reward+=reward
     return valid_reward
 
@@ -108,7 +108,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
 
 max_possible_reward = 300
 reward_increment = max_possible_reward/50
-max_valid_reward = -5
+max_valid_reward = 0
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
 valid_reward_history = []
@@ -122,12 +122,12 @@ for episode in range(EPISODES):
     while not done:       
         state = env.get_state()
         action = select_action(state, env.act_dim)
-        next_state, reward, done = env.step(action)  
+        next_state, reward, done, terminal_life_lost = env.step(action)  
         episode_reward+=reward      
         glob_frame+=1
 
-        memory.push((state, action, reward, next_state, float(done)))
-        if memory.length()<MEMORY_BUFFER*0.3:
+        memory.push((state, action, reward, next_state, float(terminal_life_lost)))
+        if memory.length()<MEMORY_BUFFER*0.05:
             glob_frame-=1
             continue
         else:

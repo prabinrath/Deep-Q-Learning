@@ -13,7 +13,7 @@ print(device)
 # Constant Parameters
 GAMMA = 0.99 # Discount factor
 UPDATE_INTERVAL = 1000 # Interval for target update
-LR = 0.00025 # Adam learning rate
+LR = 0.000025 # Adam learning rate
 EPSILON_START = 1 # Annealing start
 EPSILON_END = 0.05 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
@@ -108,7 +108,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
 
 max_possible_reward = 300
 reward_increment = max_possible_reward/50
-max_valid_reward = 0
+max_valid_reward = -5
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
 valid_reward_history = []
@@ -127,7 +127,7 @@ for episode in range(EPISODES):
         glob_frame+=1
 
         memory.push((state, action, reward, next_state, float(terminal_life_lost)))
-        if memory.length()<MEMORY_BUFFER*0.05:
+        if memory.length()<MEMORY_BUFFER*0.8:
             glob_frame-=1
             continue
         else:

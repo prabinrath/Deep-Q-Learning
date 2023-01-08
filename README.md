@@ -14,11 +14,11 @@ Before Training (Left) vs After Training (Right)
   <img width="460" height="300" src="Results/atari_trained.gif">
 </p>
 
-Reward Graph
+<!-- Reward Graph
 <p align="center">
   <img width="460" height="300" src="Results/res_valid_dqn.png">
   <img width="460" height="300" src="Results/res_valid_dddqn.png">
-</p>
+</p> -->
 
 ## Install Dependencies
 ```bash

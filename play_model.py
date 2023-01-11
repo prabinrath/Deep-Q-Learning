@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import cv2  
 from get_env_and_learner import GetEnvAndLearner
+import random
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -23,6 +24,12 @@ done = False
 img_frames = []
 cv2.namedWindow('Agent', cv2.WINDOW_NORMAL)
 net_reward = 0
+
+# Random FIRE to start episode
+for _ in range(random.randint(1,10)):
+    _ = env.get_state()
+    _, _, _, _ = env.step(1)  
+
 while not done:
     state = env.get_state()
     action = select_action(state, env.act_dim)

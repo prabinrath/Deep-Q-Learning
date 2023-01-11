@@ -76,6 +76,8 @@ def optimize_policy(samples):
     optimizer.zero_grad()
     loss.backward()
     # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    for param in policy.parameters():
+        param.grad.data.clamp_(-1, 1)
     optimizer.step()            
 
 def validate_policy():    
@@ -139,7 +141,7 @@ for episode in range(EPISODES):
         episode_reward+=reward      
         glob_frame+=1
         
-        clipped_reward = reward if reward<=1 else 1
+        clipped_reward = reward if reward<1.0 else 1.0
         memory.push((state, action, clipped_reward, next_state, float(terminal_life_lost)))
         if memory.length()<MEMORY_BUFFER*0.05:
             glob_frame-=1

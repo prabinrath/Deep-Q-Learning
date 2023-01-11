@@ -44,3 +44,11 @@ Set `MODEL_PATH` and `environment` parameters in `play_model.py`
 ```bash
 python play_model.py
 ```
+
+## Notes
+- DQN is tricky and it takes numerous attempts and patience to get things working from scratch. For quicker results one can start with OpenAI baselines. However, trying from scratch provides deeper insights about parameters and their effect on the algorithm's performance.
+- Pytorch specific: The target needs to be detached from the computation graph or the target Q values need to be calculated with `no_grad` scope during model optimization. This ensures that the optimizer does not update the weights of the target network during backpropagation.
+- Gradient clipping and reward clipping can be used alternatively. Although gradient clipping results in faster training.
+- Huber loss is an essential alternative for MSE loss. Simpler problems such as Cartpole and Pong where the planning horizon is short and the focus is more on immediate rewards, MSE loss performs fairly well. 
+- Understanding the pre-processing is confusing. I would recommend to go through [this](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/) article to get a clear idea about how the Atari environments work. 
+- Don't give up. Deep RL is frustratingly enjoyable and an engineering marvel.

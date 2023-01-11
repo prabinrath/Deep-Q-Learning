@@ -96,8 +96,9 @@ class BreakoutEnv():
         reward = self.get_reward(observation, reward, info)
         terminal_life_lost = False
         if reward == -1:
-            terminal_life_lost = True
+            terminal_life_lost = True            
             reward = 0
+            # terminal_life_lost = terminated
         if terminated:
             self.buffer = None
         

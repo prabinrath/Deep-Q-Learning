@@ -12,14 +12,13 @@ policy.load_state_dict(torch.load(MODEL_PATH))
 
 def select_action(state, act_dim, eps=None):    
     # Epsilon-greedy exploration
-    if np.random.uniform() < 0.05:
+    if np.random.uniform() < 0.1:
         return np.random.choice(act_dim)
     else:
         with torch.no_grad():
             q_sa = policy(torch.tensor(state, device=device))
         return torch.argmax(q_sa[0]).item()
 
-observation = env.reset()
 done = False
 img_frames = []
 cv2.namedWindow('Agent', cv2.WINDOW_NORMAL)

@@ -8,6 +8,9 @@ from copy import deepcopy
 from collections import deque
 import matplotlib.pyplot as plt
 import random
+import wandb
+wandb.init(project='deep-q-learning', entity='deep-rl-exp')
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -23,6 +26,14 @@ BATCH_SIZE = 32 # Sampling size from memory
 MEMORY_BUFFER = 1000000 # Replay buffer size
 EPISODES = 50000 # Number of episodes for training
 VALIDATE_FREQ = 100 # Episodes
+
+wandb.config = {
+  "type": "DQN",
+  "learning_rate": LR,
+  "memory-buffer": MEMORY_BUFFER,
+  "explore": EXPLORATION_FRAMES,
+  "batch_size": BATCH_SIZE
+}
 
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
@@ -75,7 +86,6 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    # torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
     for param in policy.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()            
@@ -107,7 +117,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
     plt.plot(reward_history, label='Reward')
     plt.plot(smooth_reward_history, label='Smooth Reward')
-    plt.xlabel('Episode')
+    plt.xlabel('Checkpoint Episode')
     plt.ylabel('Reward')
     plt.legend(loc='upper left')
     plt.title('Deep Q-Learning')
@@ -152,6 +162,9 @@ for episode in range(EPISODES):
 
         if glob_frame%TARGET_UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
+
+    wandb.log({'reward': episode_reward, 'step': glob_frame})
+    wandb.watch(policy)
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)

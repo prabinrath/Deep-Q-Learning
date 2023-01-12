@@ -48,7 +48,16 @@ python play_model.py
 ## Notes
 - DQN is tricky and it takes numerous attempts and patience to get things working from scratch. For quicker results one can start with OpenAI baselines. However, trying from scratch provides deeper insights about parameters and their effect on the algorithm's performance.
 - Pytorch specific: The target needs to be detached from the computation graph or the target Q values need to be calculated with `no_grad` scope during model optimization. This ensures that the optimizer does not update the weights of the target network during backpropagation.
-- Gradient clipping and reward clipping can be used alternatively. Although gradient clipping results in faster training.
+- Be aware of the data types of tensors. Replay memory should have `uint8` type but that needs to be converted to `float32` while training. Reward and terminal tensors should also be `float32` type.
+- Gradient clipping and reward clipping both are extremely important for stability.
+- Batch normalization is **not** a good choice for DQN and leads to increased training time.
 - Huber loss is an essential alternative for MSE loss. Simpler problems such as Cartpole and Pong where the planning horizon is short and the focus is more on immediate rewards, MSE loss performs fairly well. 
-- Understanding the pre-processing is confusing. I would recommend to go through [this](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/) article to get a clear idea about how the Atari environments work. 
-- Don't give up. Deep RL is frustratingly enjoyable and an engineering marvel.
+- Parameters such as GAMMA, BATCH_SIZE, LEARNING_RATE, EXPLORATION_FRAMES and MEMORY_BUFFER determine the training time. Small deviations in these parameters should not affect the stability drastically.
+- EPSILON scheduling is important during initial training phase. In the later phase of training most of the learning happens with EPSILON_END.
+- Gym Deterministic environments are the ones Deepmind folks used for their (2013 paper)[https://arxiv.org/pdf/1312.5602.pdf]
+- Model optimization happens once in POLICY_UPDATE_INTERVAL steps and target update happens once in TARGET_UPDATE_INTERVAL steps. For Deterministic environments each step skips 4 frames. So if POLICY_UPDATE_INTERVAL=4 and TARGET_UPDATE_INTERVAL=100 then backpropagation happens once in 16 game frames and target update happens once in 400 game frames.
+- Understanding the pre-processing is confusing. I would recommend [this](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/) article to get a clear idea about how the Atari environments work. 
+- There are two terminal flags. One is true every time the agent loses a life and the other is true only at the end of an episode. Replay memory should be filled with the one indicating lives lost.
+- Random FIRE actions at the start of an episode avoids learning a suboptimal policy.
+- Start training when memory buffer has some good number of samples. This avoids learning a suboptimal policy.
+- Don't give up. Deep RL is frustrating to train but it is also an engineering marvel.

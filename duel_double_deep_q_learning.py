@@ -7,19 +7,33 @@ from dqn_utils import ReplayMemory
 from copy import deepcopy
 from collections import deque
 import matplotlib.pyplot as plt
+import random
+import wandb
+wandb.init(project='deep-q-learning', entity='deep-rl-exp')
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 # Constant Parameters
 GAMMA = 0.99 # Discount factor
-UPDATE_INTERVAL = 1000 # Interval for target update
-LR = 0.00025 # Adam learning rate
+POLICY_UPDATE_INTERVAL = 4 # Interval for policy update
+TARGET_UPDATE_INTERVAL = 10000 # Interval for target update
+LR = 0.00001 # Adam learning rate
 EPSILON_START = 1 # Annealing start
-EPSILON_END = 0.05 # Annealing end
+EPSILON_END = 0.1 # Annealing end
 EXPLORATION_FRAMES = 1000000 # Annealing frames
-BATCH_SIZE = 64 # Sampling size from memory
+BATCH_SIZE = 32 # Sampling size from memory
 MEMORY_BUFFER = 1000000 # Replay buffer size
 EPISODES = 20000 # Number of episodes for training
+VALIDATE_FREQ = 100 # Episodes
+
+wandb.config = {
+  "type": "DDDQN",
+  "learning_rate": LR,
+  "memory-buffer": MEMORY_BUFFER,
+  "explore": EXPLORATION_FRAMES,
+  "batch_size": BATCH_SIZE
+}
 
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
@@ -37,8 +51,12 @@ glob_frame = 0
 
 def get_epsilon():
     # Linear Annealing
-    return EPSILON_END + (EXPLORATION_FRAMES-glob_frame)*(EPSILON_START-EPSILON_END)/EXPLORATION_FRAMES \
-        if glob_frame < EXPLORATION_FRAMES else EPSILON_END
+    if glob_frame < EXPLORATION_FRAMES:
+        return EPSILON_END + (EXPLORATION_FRAMES-glob_frame)*(EPSILON_START-EPSILON_END)/EXPLORATION_FRAMES
+    elif glob_frame < 2*EXPLORATION_FRAMES:
+        return EPSILON_END/10 + (2*EXPLORATION_FRAMES-glob_frame)*(EPSILON_END-EPSILON_END/10)/EXPLORATION_FRAMES
+    else:
+        return EPSILON_END/10
 
 def select_action(state, act_dim, eps=None):    
     if eps==None:
@@ -69,7 +87,8 @@ def optimize_policy(samples):
     loss = loss_fn(q_sa, q_sa_target)
     optimizer.zero_grad()
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(policy.parameters(), 10)
+    for param in policy.parameters():
+        param.grad.data.clamp_(-1, 1)
     optimizer.step()            
 
 def validate_policy():    
@@ -99,7 +118,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
     plt.plot(reward_history, label='Reward')
     plt.plot(smooth_reward_history, label='Smooth Reward')
-    plt.xlabel('Episode')
+    plt.xlabel('Checkpoint Episode')
     plt.ylabel('Reward')
     plt.legend(loc='upper left')
     plt.title('Duel Double Deep Q-Learning')
@@ -109,53 +128,66 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
 
 max_possible_reward = 300
 reward_increment = max_possible_reward/50
-max_valid_reward = -5
+max_valid_reward = 0
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
 valid_reward_history = []
 recent_train_reward = deque(maxlen=100)
-recent_valid_reward = deque(maxlen=100)
+recent_valid_reward = deque(maxlen=10)
 
 for episode in range(EPISODES):
     # Default max episode steps is defined in Gym environments
     done = False
     episode_reward = 0
+
+    # Random FIRE to start episode
+    for _ in range(random.randint(1,10)):
+        _ = env.get_state()
+        _, _, _, _ = env.step(1) 
+
     while not done:       
         state = env.get_state()
         action = select_action(state, env.act_dim)
-        next_state, reward, done = env.step(action)  
+        next_state, reward, done, terminal_life_lost = env.step(action)  
         episode_reward+=reward      
         glob_frame+=1
-
-        memory.push((state, action, reward, next_state, float(done)))
-        if memory.length()<MEMORY_BUFFER*0.3:
+        
+        clipped_reward = reward if reward<1.0 else 1.0
+        memory.push((state, action, clipped_reward, next_state, float(terminal_life_lost)))
+        if memory.length()<MEMORY_BUFFER*0.05:
             glob_frame-=1
             continue
         else:
-            optimize_policy(memory.sample(BATCH_SIZE))
+            if glob_frame%POLICY_UPDATE_INTERVAL==0:
+                optimize_policy(memory.sample(BATCH_SIZE))
 
-        if glob_frame%UPDATE_INTERVAL==0:
+        if glob_frame%TARGET_UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
+
+    wandb.log({'reward': episode_reward, 'step': glob_frame})
+    wandb.watch(policy)
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)
     avg_train_reward = round(np.mean(recent_train_reward),3)
 
-    valid_reward = validate_policy()    
-    max_valid_reward = max(valid_reward,max_valid_reward)
-    valid_reward_history.append(valid_reward)
-    recent_valid_reward.append(valid_reward)    
-    avg_valid_reward = round(np.mean(recent_valid_reward),3)
-
-    # Save model when there is a performance improvement
-    if max_valid_reward>=max_reward_target:
-        max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
-        print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+    if episode%VALIDATE_FREQ==0:
+        valid_reward = validate_policy()    
+        max_valid_reward = max(valid_reward,max_valid_reward)
+        valid_reward_history.append(valid_reward)
+        recent_valid_reward.append(valid_reward)
+        avg_valid_reward = round(np.mean(recent_valid_reward),3)
         save_stats(train_reward_history, valid_reward_history)
-        torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn'+str(int(max_valid_reward))+')'+'.dqn')
-        if max_valid_reward>=max_possible_reward:
-            print('Best Model Achieved !!!')
-            break
+        print('Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
+        
+        # Save model when there is a performance improvement
+        if max_valid_reward>=max_reward_target:
+            max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
+            print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
+            torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
+            if max_valid_reward>=max_possible_reward:
+                print('Best Model Achieved !!!')
+                break
 
     print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
 

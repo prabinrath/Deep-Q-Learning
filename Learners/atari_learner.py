@@ -9,13 +9,10 @@ class AtariLearner(nn.Module):
         # CNN Layers
         self.cnn1 = nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=8, stride=4)
         h, w = self.calc_conv2d_output_dim(in_dim = (84,84), kernel_size=(8,8), stride=(4,4))
-        # self.bn1 = nn.BatchNorm2d(32)
         self.cnn2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
         h, w = self.calc_conv2d_output_dim(in_dim = (h,w), kernel_size=(4,4), stride=(2,2))
-        # self.bn2 = nn.BatchNorm2d(64)
         self.cnn3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         h, w = self.calc_conv2d_output_dim(in_dim = (h,w), kernel_size=(3,3), stride=(1,1))
-        # self.bn3 = nn.BatchNorm2d(64)
         
         # Q-value Estimator
         self.fcc1 = nn.Linear(h*w*64, 512)
@@ -36,9 +33,6 @@ class AtariLearner(nn.Module):
 
     def forward(self, x_):
         x = x_/255.0
-        # x = F.relu(self.bn1(self.cnn1(x)))
-        # x = F.relu(self.bn2(self.cnn2(x)))
-        # x = F.relu(self.bn3(self.cnn3(x)))
         x = F.relu(self.cnn1(x))
         x = F.relu(self.cnn2(x))
         x = F.relu(self.cnn3(x))

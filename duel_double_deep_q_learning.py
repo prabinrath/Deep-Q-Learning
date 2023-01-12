@@ -101,7 +101,7 @@ def validate_policy():
     while not done:       
         state = renv.get_state()
         action = select_action(state, renv.act_dim, EPSILON_END)
-        _, reward, done = renv.step(action)
+        _, reward, done, _ = renv.step(action)
         valid_reward+=reward
     return valid_reward
 

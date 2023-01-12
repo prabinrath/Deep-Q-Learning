@@ -54,7 +54,7 @@ python play_model.py
 - Huber loss is an essential alternative for MSE loss. Simpler problems such as Cartpole and Pong where the planning horizon is short and the focus is more on immediate rewards, MSE loss performs fairly well. 
 - Parameters such as GAMMA, BATCH_SIZE, LEARNING_RATE, EXPLORATION_FRAMES and MEMORY_BUFFER determine the training time. Small deviations in these parameters should not affect the stability drastically.
 - EPSILON scheduling is important during initial training phase. In the later phase of training most of the learning happens with EPSILON_END.
-- Gym Deterministic environments are the ones Deepmind folks used for their (2013 paper)[https://arxiv.org/pdf/1312.5602.pdf]
+- Gym Deterministic environments are the ones Deepmind folks used for their [2013 paper](https://arxiv.org/pdf/1312.5602.pdf)
 - Model optimization happens once in POLICY_UPDATE_INTERVAL steps and target update happens once in TARGET_UPDATE_INTERVAL steps. For Deterministic environments each step skips 4 frames. So if POLICY_UPDATE_INTERVAL=4 and TARGET_UPDATE_INTERVAL=100 then backpropagation happens once in 16 game frames and target update happens once in 400 game frames.
 - Understanding the pre-processing is confusing. I would recommend [this](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/) article to get a clear idea about how the Atari environments work. 
 - There are two terminal flags. One is true every time the agent loses a life and the other is true only at the end of an episode. Replay memory should be filled with the one indicating lives lost.

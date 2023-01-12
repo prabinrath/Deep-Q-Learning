@@ -44,7 +44,7 @@ class PongEnv():
         next_state = self.get_state()
         if terminated:
             self.buffer = None
-        return next_state, self.get_reward(observation, reward), terminated
+        return next_state, self.get_reward(observation, reward), terminated, terminated
     
     def render(self):
         return self.env.render(mode="rgb_array").astype(np.float32)/255

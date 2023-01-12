@@ -30,6 +30,7 @@ def GetEnvAndLearner(name='CartPole-v1', learner='dqn'):
             target = AtariLearnerAdv(env.n_buffer, env.act_dim).to(device)
         else:
             raise Exception('Learner Not Defined')
+        policy.apply(policy.init_weights)
         target.load_state_dict(policy.state_dict())
         return env, policy, target
     elif name == 'BreakoutDeterministic-v4':

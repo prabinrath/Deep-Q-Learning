@@ -95,6 +95,10 @@ def validate_policy():
     renv.reset()
     done = False
     valid_reward = 0
+    # Random FIRE to start episode
+    for _ in range(random.randint(1,10)):
+        _ = renv.get_state()
+        _, _, _, _ = renv.step(1)  
     while not done:       
         state = renv.get_state()
         action = select_action(state, renv.act_dim, EPSILON_END)

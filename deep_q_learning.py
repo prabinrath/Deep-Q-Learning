@@ -99,7 +99,7 @@ def validate_policy():
         _, _, _, _ = renv.step(1)  
     while not done:       
         state = renv.get_state()
-        action = select_action(state, renv.act_dim, EPSILON_END)
+        action = select_action(state, renv.act_dim, EPSILON_END/10)
         _, reward, done, _ = renv.step(action)
         valid_reward+=reward
     return valid_reward
@@ -166,8 +166,8 @@ for episode in range(EPISODES):
         if glob_frame%TARGET_UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
 
-    wandb.log({'reward': episode_reward, 'step': glob_frame})
-    wandb.watch(policy)
+    wandb.log({'reward': episode_reward})
+    # wandb.watch(policy)
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)

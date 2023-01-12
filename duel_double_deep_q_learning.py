@@ -39,7 +39,7 @@ optimizer = optim.Adam(policy.parameters(), lr=LR)
 # Memory for Experience Replay
 memory = ReplayMemory(MEMORY_BUFFER)
 wandb.config = {
-  "type": "DQN",
+  "type": "DDDQN",
   "environment":environment,
   "learning_rate": LR,
   "memory-buffer": MEMORY_BUFFER,
@@ -100,7 +100,7 @@ def validate_policy():
         _, _, _, _ = renv.step(1)  
     while not done:       
         state = renv.get_state()
-        action = select_action(state, renv.act_dim, EPSILON_END)
+        action = select_action(state, renv.act_dim, EPSILON_END/10)
         _, reward, done, _ = renv.step(action)
         valid_reward+=reward
     return valid_reward
@@ -167,8 +167,8 @@ for episode in range(EPISODES):
         if glob_frame%TARGET_UPDATE_INTERVAL==0:
             target.load_state_dict(policy.state_dict())
 
-    wandb.log({'reward': episode_reward, 'step': glob_frame})
-    wandb.watch(policy)
+    wandb.log({'reward': episode_reward})
+    # wandb.watch(policy)
 
     train_reward_history.append(episode_reward)
     recent_train_reward.append(episode_reward)
@@ -192,6 +192,6 @@ for episode in range(EPISODES):
                 print('Best Model Achieved !!!')
                 break
 
-    print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3), ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward, ' | Valid Reward:', valid_reward, ' | Avg Valid Reward:', avg_valid_reward)
+    print('Episode: ', episode, ' | Epsilon: ', round(get_epsilon(),3) , ' | Train Reward:', episode_reward, ' | Avg Train Reward:', avg_train_reward)
 
 save_stats(train_reward_history, valid_reward_history)

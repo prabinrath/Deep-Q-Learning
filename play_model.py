@@ -6,14 +6,14 @@ import random
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn72).dqn'
+MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn266).dqn'
 environment = 'BreakoutDeterministic-v4'
 env, policy, _ = GetEnvAndLearner(name = environment, learner='dqn')
 policy.load_state_dict(torch.load(MODEL_PATH))
 
 def select_action(state, act_dim, eps=None):    
     # Epsilon-greedy exploration
-    if np.random.uniform() < 0.1:
+    if np.random.uniform() < 0.01:
         return np.random.choice(act_dim)
     else:
         with torch.no_grad():
@@ -45,7 +45,7 @@ while not done:
 
 print(net_reward)
 
-GENERATE_GIF = False
+GENERATE_GIF = True
 if GENERATE_GIF:
     import imageio      
     print("Saving GIF file")

@@ -27,14 +27,6 @@ MEMORY_BUFFER = 1000000 # Replay buffer size
 EPISODES = 50000 # Number of episodes for training
 VALIDATE_FREQ = 100 # Episodes
 
-wandb.config = {
-  "type": "DQN",
-  "learning_rate": LR,
-  "memory-buffer": MEMORY_BUFFER,
-  "explore": EXPLORATION_FRAMES,
-  "batch_size": BATCH_SIZE
-}
-
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
 # environment, training policy, target policy
@@ -46,7 +38,14 @@ optimizer = optim.Adam(policy.parameters(), lr=LR)
 
 # Memory for Experience Replay
 memory = ReplayMemory(MEMORY_BUFFER)
-
+wandb.config = {
+  "type": "DQN",
+  "environment":environment,
+  "learning_rate": LR,
+  "memory-buffer": MEMORY_BUFFER,
+  "explore": EXPLORATION_FRAMES,
+  "batch_size": BATCH_SIZE
+}
 glob_frame = 0
 
 def get_epsilon():

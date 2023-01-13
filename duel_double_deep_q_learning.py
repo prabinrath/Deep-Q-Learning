@@ -15,8 +15,8 @@ wandb.init(project='deep-q-learning', entity='deep-rl-exp')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
+environment = env_folder+'Deterministic-v4'
 const = constants(environment)
 
 # Constant Parameters
@@ -118,7 +118,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     plt.legend(loc='upper left')
     plt.title('Duel Double Deep Q-Learning')
     # plt.show()
-    plt.savefig('res_train_dddqn.png')
+    plt.savefig(env_folder+'_res_train_dddqn.png')
     plt.clf()
     reward_history = np.array(valid_reward_history)
     smooth_reward_history = np.convolve(reward_history, np.ones(padding*2)/(padding*2), mode='valid')
@@ -129,7 +129,7 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     plt.legend(loc='upper left')
     plt.title('Duel Double Deep Q-Learning')
     # plt.show()
-    plt.savefig('res_valid_dddqn.png')
+    plt.savefig(env_folder+'_res_valid_dddqn.png')
     plt.clf()
 
 max_possible_reward = const.max_possible_reward

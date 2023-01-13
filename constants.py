@@ -12,7 +12,7 @@ class constants:
             self.MEMORY_BUFFER = 50000 # Replay buffer size
             self.EPISODES = 10000 # Number of episodes for training
             self.VALIDATE_FREQ = 100 # Episodes
-            self.max_possible_reward = 21
+            self.max_possible_reward = 20
             self.reward_increment = self.max_possible_reward/10
             self.max_valid_reward = -21
         elif env == "BreakoutDeterministic-v4":
@@ -27,6 +27,6 @@ class constants:
             self.MEMORY_BUFFER = 1000000 # Replay buffer size
             self.EPISODES = 50000 # Number of episodes for training
             self.VALIDATE_FREQ = 100 # Episodes
-            self.max_possible_reward = 300
+            self.max_possible_reward = 350
             self.reward_increment = self.max_possible_reward/50
             self.max_valid_reward = 0

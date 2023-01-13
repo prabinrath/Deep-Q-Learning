@@ -45,7 +45,7 @@ while not done:
 
 print(net_reward)
 
-GENERATE_GIF = True
+GENERATE_GIF = False
 if GENERATE_GIF:
     import imageio      
     print("Saving GIF file")

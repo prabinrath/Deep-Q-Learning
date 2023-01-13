@@ -6,16 +6,23 @@
 ![GYM](https://img.shields.io/badge/GYM-0.19-turquoise.svg)
 
 ## Results
-Breakout
+### Pong
+<p align="center">
+  <img width="460" height="300" src="Results/pong_trained.gif">
+</p>
+<p align="center">
+  <img width="460" height="300" src="Results/pong_res_train_dqn.png">
+  <img width="460" height="300" src="Results/pong_res_train_dddqn.png">
+</p>
+
+### Breakout
 <p align="center">
   <img width="460" height="300" src="Results/breakout_trained.gif">
 </p>
-
-<!-- Reward Graph
 <p align="center">
-  <img width="460" height="300" src="Results/res_train_dqn.png">
-  <img width="460" height="300" src="Results/res_train_dddqn.png">
-</p> -->
+  <img width="460" height="300" src="Results/breakout_res_train_dqn.png">
+  <img width="460" height="300" src="Results/breakout_res_train_dddqn.png">
+</p>
 
 ## Install Dependencies
 ```bash
@@ -26,7 +33,9 @@ pip install -r requirements.txt
 Create folder for checkpoints
 ```bash
 mkdir -p Checkpoints/Pong
+mkdir -p Checkpoints/Breakout
 ```
+Set the `environment` parameter before running. </br>
 Run DQN
 ```bash
 python deep_q_learning.py
@@ -46,7 +55,11 @@ python play_model.py
 - DQN is tricky and it takes numerous attempts and patience to get things working from scratch. For quicker results one can start with OpenAI baselines. However, trying from scratch provides deeper insights about parameters and their effect on the algorithm's performance.
 - Pytorch specific: The target needs to be detached from the computation graph or the target Q values need to be calculated with `no_grad` scope during model optimization. This ensures that the optimizer does not update the weights of the target network during backpropagation.
 - Be aware of the data types of tensors. Replay memory should have `uint8` type but that needs to be converted to `float32` while training. Reward and terminal tensors should also be `float32` type.
-- Gradient clipping and reward clipping both are extremely important for stability.
+- Gradient clipping and reward clipping both are extremely important for stability. Figure shown below illustrates a failed training example where the reward falls as soon as the agent gets a very high reward (Breakout). Sudden large reward leads to unstable gradient updates during backpropagation.
+<p align="center">
+  <img width="460" height="300" src="Results/res_train_dqn_gradient_explode.png">
+</p>
+
 - Batch normalization is **not** a good choice for DQN and leads to increased training time.
 - Huber loss is an essential alternative for MSE loss. Simpler problems such as Cartpole and Pong where the planning horizon is short and the focus is more on immediate rewards, MSE loss performs fairly well. 
 - Parameters such as GAMMA, BATCH_SIZE, LEARNING_RATE, EXPLORATION_FRAMES and MEMORY_BUFFER determine the training time. Small deviations in these parameters should not affect the stability drastically.

@@ -9,26 +9,29 @@ from collections import deque
 import matplotlib.pyplot as plt
 import random
 import wandb
+from constants import constants
 wandb.init(project='deep-q-learning', entity='deep-rl-exp')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-# Constant Parameters
-GAMMA = 0.99 # Discount factor
-POLICY_UPDATE_INTERVAL = 4 # Interval for policy update
-TARGET_UPDATE_INTERVAL = 10000 # Interval for target update
-LR = 0.00001 # Adam learning rate
-EPSILON_START = 1 # Annealing start
-EPSILON_END = 0.1 # Annealing end
-EXPLORATION_FRAMES = 1000000 # Annealing frames
-BATCH_SIZE = 32 # Sampling size from memory
-MEMORY_BUFFER = 1000000 # Replay buffer size
-EPISODES = 20000 # Number of episodes for training
-VALIDATE_FREQ = 100 # Episodes
-
 environment = 'BreakoutDeterministic-v4'
 env_folder = 'Breakout'
+const = constants(environment)
+
+# Constant Parameters
+GAMMA = const.GAMMA # Discount factor
+POLICY_UPDATE_INTERVAL = const.POLICY_UPDATE_INTERVAL # Interval for policy update
+TARGET_UPDATE_INTERVAL = const.TARGET_UPDATE_INTERVAL # Interval for target update
+LR = const.LR # Adam learning rate
+EPSILON_START = const.EPSILON_START # Annealing start
+EPSILON_END = const.EPSILON_END # Annealing end
+EXPLORATION_FRAMES = const.EXPLORATION_FRAMES # Annealing frames
+BATCH_SIZE = const.BATCH_SIZE # Sampling size from memory
+MEMORY_BUFFER = const.MEMORY_BUFFER # Replay buffer size
+EPISODES = const.EPISODES # Number of episodes for training
+VALIDATE_FREQ = const.VALIDATE_FREQ # Episodes
+
 # environment, training policy, target policy
 env, policy, target = GetEnvAndLearner(name = environment, learner='dddqn')
 target.eval()
@@ -129,9 +132,9 @@ def save_stats(train_reward_history, valid_reward_history, padding=10):
     plt.savefig('res_valid_dddqn.png')
     plt.clf()
 
-max_possible_reward = 300
-reward_increment = max_possible_reward/50
-max_valid_reward = 0
+max_possible_reward = const.max_possible_reward
+reward_increment = const.reward_increment
+max_valid_reward = const.max_valid_reward
 max_reward_target = max_valid_reward + reward_increment
 train_reward_history = []
 valid_reward_history = []
@@ -187,8 +190,9 @@ for episode in range(EPISODES):
         if max_valid_reward>=max_reward_target:
             max_reward_target = min(max_possible_reward, max(max_reward_target,max_valid_reward)+reward_increment)-1        
             print('Episode: ', episode, ' | Max Validation Reward: ', max_valid_reward, ' | Epsilon: ', get_epsilon())
-            torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dqn'+str(int(max_valid_reward))+')'+'.dqn')
-            if max_valid_reward>=max_possible_reward:
+            torch.save(policy.state_dict(), 'Checkpoints/'+env_folder+'/'+environment+'(dddqn'+str(int(max_valid_reward))+')'+'.dqn')
+            max_valid_reward*=0.8
+            if avg_valid_reward>=max_possible_reward:
                 print('Best Model Achieved !!!')
                 break
 

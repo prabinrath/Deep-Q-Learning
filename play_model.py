@@ -6,9 +6,12 @@ import random
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-MODEL_PATH = 'Benchmarks/BreakoutDeterministic-v4(dqn266).dqn'
-environment = 'BreakoutDeterministic-v4'
-env, policy, _ = GetEnvAndLearner(name = environment, learner='dqn')
+env_folder = 'Breakout'
+learner = 'dqn'
+benchmark = '414'
+environment = env_folder+'Deterministic-v4'
+MODEL_PATH = 'Benchmarks/'+env_folder+'Deterministic-v4('+learner+benchmark+').dqn'
+env, policy, _ = GetEnvAndLearner(name = environment, learner=learner)
 policy.load_state_dict(torch.load(MODEL_PATH))
 
 def select_action(state, act_dim, eps=None):    

@@ -52,7 +52,7 @@ wandb.config = {
 glob_frame = 0
 
 def get_epsilon():
-    # Linear Annealing
+    # Piecewise Linear Annealing
     if glob_frame < EXPLORATION_FRAMES:
         return EPSILON_END + (EXPLORATION_FRAMES-glob_frame)*(EPSILON_START-EPSILON_END)/EXPLORATION_FRAMES
     elif glob_frame < 2*EXPLORATION_FRAMES:
@@ -160,7 +160,7 @@ for episode in range(EPISODES):
         clipped_reward = reward if reward<1.0 else 1.0
         memory.push((state, action, clipped_reward, next_state, float(terminal_life_lost)))
         if memory.length()<MEMORY_BUFFER*0.05:
-            glob_frame-=1
+            glob_frame-=1 # Prevents epsilon decay for initial few steps
             continue
         else:
             if glob_frame%POLICY_UPDATE_INTERVAL==0:

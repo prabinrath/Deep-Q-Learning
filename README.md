@@ -24,6 +24,11 @@
   <img width="460" height="300" src="Results/breakout_res_train_dddqn.png">
 </p>
 
+Breakout has multiple levels. The environment resets and the agent continues to get points in the next level. Such case results in sudden increase in the reward.
+<p align="center">
+  <img width="460" height="300" src="Results/breakout_res_train_dqn_next_level.png">
+</p>
+
 ## Install Dependencies
 ```bash
 pip install -r requirements.txt

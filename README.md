@@ -56,7 +56,7 @@ Set `MODEL_PATH` and `environment` parameters in `play_model.py`
 python play_model.py
 ```
 
-## Notes
+## Takeaways
 - DQN is tricky and it takes numerous attempts and patience to get things working from scratch. For quicker results one can start with OpenAI baselines. However, trying from scratch provides deeper insights about parameters and their effect on the algorithm's performance.
 - Pytorch specific: The target needs to be detached from the computation graph or the target Q values need to be calculated with `no_grad` scope during model optimization. This ensures that the optimizer does not update the weights of the target network during backpropagation.
 - Be aware of the data types of tensors. Replay memory should have `uint8` type but that needs to be converted to `float32` while training. Reward and terminal tensors should also be `float32` type.
